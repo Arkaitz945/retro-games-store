@@ -13,7 +13,7 @@
 
     <div class="login-container">
         <h2>Iniciar Sesión</h2>
-        <form action="login.php" method="post">
+        <form action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']); ?>" method="post">
             <div class="form-group">
                 <label for="email">Correo Electrónico:</label>
                 <input type="email" id="email" name="email" required>
@@ -22,55 +22,38 @@
                 <label for="password">Contraseña:</label>
                 <input type="password" id="password" name="password" required>
             </div>
-            <button type="submit">Iniciar Sesión</button>
+            <button type="submit" name="login" value="1">Iniciar Sesión</button>
         </form>
+        <p class="register-link">¿Aún no estás registrado? <a href="register.php">Regístrate</a></p>
     </div>
-    <!-- 
-    <style>
-        .login-container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f9f9f9;
-            border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+
+
+    <?php
+    require_once "../controller/UsuarioController.php";
+
+    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
+        $campoEmailSaneado = htmlspecialchars($_POST['email']);
+        $campoContraseñaSaneado = htmlspecialchars($_POST['password']);
+
+        $usuarioValido = (new UsuarioController())->loginUsuario($campoEmailSaneado, $campoContraseñaSaneado);
+        if ($usuarioValido == true) {
+            // Start session if not already started
+            if (session_status() == PHP_SESSION_NONE) {
+                session_start();
+            }
+
+            // Save user information in session
+            $_SESSION['usuario'] = $usuarioValido[0]['nombre']; // Save the user's name
+            $_SESSION['id'] = $usuarioValido[0]['ID_Usuario'];
+            $_SESSION['admin'] = $usuarioValido[0]['EsAdmin'];
+            header("Location: home.php");
+            exit();
+        } else {
+            echo "<h3>Usuario o contraseña incorrectos.</h3>";
         }
+    }
 
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-
-        button {
-            padding: 10px 15px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-    </style> -->
-
-
-
-
-
+    ?>
 </body>
 
 </html>
