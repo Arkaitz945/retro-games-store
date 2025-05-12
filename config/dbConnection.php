@@ -12,7 +12,9 @@ function getDBConnection()
         $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         return $conn;
     } catch (PDOException $e) {
-        echo 'Connection error: ' . $e->getMessage();
+        // Mejorar el manejo de errores para más detalles
+        error_log('Connection error: ' . $e->getMessage());
+        echo 'Error de conexión: No se pudo conectar a la base de datos';
         return null;
     }
 }

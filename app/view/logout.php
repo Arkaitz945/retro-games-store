@@ -1,13 +1,11 @@
 <?php
-// Start the session if not already started
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
+// Iniciar sesión si no está iniciada
+session_start();
 
-// Unset all session variables
+// Limpiar todas las variables de sesión
 $_SESSION = array();
 
-// If it's desired to kill the session, also delete the session cookie
+// Si se desea destruir la sesión completamente, borrar también la cookie de sesión
 if (ini_get("session.use_cookies")) {
     $params = session_get_cookie_params();
     setcookie(
@@ -21,9 +19,9 @@ if (ini_get("session.use_cookies")) {
     );
 }
 
-// Destroy the session
+// Finalmente, destruir la sesión
 session_destroy();
 
-// Redirect to login page
+// Redirigir a la página de inicio de sesión
 header("Location: index.php");
 exit();
