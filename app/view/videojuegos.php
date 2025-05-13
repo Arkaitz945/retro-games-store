@@ -47,13 +47,16 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/productos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/notification.css">
 </head>
 
 <body>
     <!-- Banner superior -->
     <header class="main-header">
         <div class="logo">
-            <h1><i class="fas fa-gamepad"></i> RetroGames Store</h1>
+            <a href="home.php" class="logo-link">
+                <h1><i class="fas fa-gamepad"></i> RetroGames Store</h1>
+            </a>
         </div>
         <nav class="main-nav">
             <ul>
@@ -175,9 +178,12 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                             <div class="product-actions">
                                 <a href="producto.php?id=<?php echo $juego['ID_J']; ?>" class="btn-secondary">Ver Detalles</a>
                                 <?php if ($juego['stock'] > 0): ?>
-                                    <a href="carrito.php?action=add&tipo=juego&id=<?php echo $juego['ID_J']; ?>" class="btn-add-cart">
+                                    <button type="button" class="btn-add-cart"
+                                        data-id="<?php echo $juego['ID_J']; ?>"
+                                        data-tipo="juego"
+                                        data-nombre="<?php echo htmlspecialchars($juego['nombre']); ?>">
                                         <i class="fas fa-cart-plus"></i> Añadir
-                                    </a>
+                                    </button>
                                 <?php else: ?>
                                     <span class="out-of-stock">Agotado</span>
                                 <?php endif; ?>
@@ -188,6 +194,20 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             </div>
         </div>
     </main>
+
+    <!-- Mantener solo esta notificación al final del body -->
+    <div class="cart-toast" id="cart-toast">
+        <div class="cart-toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="cart-toast-content">
+            <div class="cart-toast-title">Añadido al carrito</div>
+            <div class="cart-toast-message" id="cart-toast-message"></div>
+        </div>
+        <button class="cart-toast-close" onclick="closeToast()">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
 
     <!-- Footer -->
     <footer class="main-footer">
@@ -246,7 +266,86 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                     }
                 }
             });
+
+            // Unificar el código para añadir al carrito usando solo el segundo método
+            document.querySelectorAll('.btn-add-cart').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    // Obtener información del producto
+                    const productCard = this.closest('.product-card');
+                    const productName = productCard.querySelector('h3').textContent;
+                    const productId = this.getAttribute('data-id') || this.getAttribute('href').split('id=')[1];
+
+                    // Hacer una petición AJAX para añadir al carrito
+                    fetch(`carrito.php?action=add&tipo=juego&id=${productId}`)
+                        .then(response => response.json()) // Cambiado de text a json
+                        .then(data => {
+                            // Verificar si la operación fue exitosa
+                            if (data.success) {
+                                // Mostrar notificación de éxito
+                                showToast(`${productName} se ha añadido correctamente a tu carrito`, false);
+                                // Actualizar contador del carrito
+                                updateCartCounter();
+                            } else {
+                                // Mostrar notificación de error
+                                showToast(data.message || 'Error al añadir el producto al carrito', true);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showToast('Error al añadir el producto al carrito', true);
+                        });
+                });
+            });
+
+            // Función para actualizar el contador del carrito
+            function updateCartCounter() {
+                fetch('get_cart_count.php')
+                    .then(response => response.json())
+                    .then(data => {
+                        const badges = document.querySelectorAll('.cart-badge');
+                        if (badges.length > 0) {
+                            badges.forEach(badge => {
+                                badge.textContent = data.count;
+                                badge.style.display = data.count > 0 ? 'inline-block' : 'none';
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al actualizar contador:', error);
+                    });
+            }
         });
+
+        // Función para mostrar la notificación toast
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('cart-toast');
+            const toastMessage = document.getElementById('cart-toast-message');
+
+            // Cambiar el mensaje
+            toastMessage.textContent = message;
+
+            // Cambiar clase según tipo de mensaje
+            if (isError) {
+                toast.classList.add('error');
+            } else {
+                toast.classList.remove('error');
+            }
+
+            // Mostrar el toast
+            toast.classList.add('show');
+
+            // Establecer un timeout para ocultarlo
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 5000); // 5 segundos
+        }
+
+        // Función para cerrar el toast manualmente
+        function closeToast() {
+            document.getElementById('cart-toast').classList.remove('show');
+        }
     </script>
 </body>
 

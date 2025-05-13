@@ -71,6 +71,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'GET') {
 
         $resultado = $carritoController->addToCart($idUsuario, $tipoProducto, $productoId, $cantidad);
 
+        // Si es una petición AJAX, devolver respuesta JSON
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            echo json_encode($resultado);
+            exit;
+        }
+
+        // Para peticiones normales, seguir con el procesamiento habitual
         if ($resultado['success']) {
             $mensaje = 'Producto añadido al carrito correctamente';
             $tipoMensaje = 'success';
@@ -117,7 +125,9 @@ $cartTotal = $carritoController->getCartTotal($idUsuario);
     <!-- Banner superior -->
     <header class="main-header">
         <div class="logo">
-            <h1><i class="fas fa-gamepad"></i> RetroGames Store</h1>
+            <a href="home.php" class="logo-link">
+                <h1><i class="fas fa-gamepad"></i> RetroGames Store</h1>
+            </a>
         </div>
         <nav class="main-nav">
             <ul>

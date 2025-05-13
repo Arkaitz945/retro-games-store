@@ -510,3 +510,25 @@ a {
   text-align: center;
   margin-left: 5px;
 }
+
+/* Estilo para el enlace del logo */
+.logo-link {
+  text-decoration: none;
+  color: white;
+  display: flex;
+  align-items: center;
+}
+
+.logo-link:hover {
+  color: #ffd700;
+  text-decoration: none;
+}
+
+.logo h1 {
+  margin: 0;
+  transition: color 0.3s ease;
+}
+
+.logo-link:hover h1 {
+  color: #ffd700;
+}

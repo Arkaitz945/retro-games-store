@@ -57,7 +57,7 @@ class CarritoController
         if ($producto['stock'] < $cantidad) {
             return [
                 'success' => false,
-                'message' => 'No hay suficiente stock disponible'
+                'message' => 'Error: No hay suficiente stock disponible. Solo quedan ' . $producto['stock'] . ' unidad(es) de este producto.'
             ];
         }
 
@@ -70,10 +70,19 @@ class CarritoController
                     $currentQty = $item['cantidad'];
                     // Verificar que la nueva cantidad total no exceda el stock
                     if (($currentQty + $cantidad) > $producto['stock']) {
-                        return [
-                            'success' => false,
-                            'message' => 'La cantidad total excedería el stock disponible'
-                        ];
+                        $disponible = $producto['stock'] - $currentQty;
+
+                        if ($disponible <= 0) {
+                            return [
+                                'success' => false,
+                                'message' => 'Error: Ya tienes todas las unidades disponibles de este producto en tu carrito.'
+                            ];
+                        } else {
+                            return [
+                                'success' => false,
+                                'message' => 'Error: Solo puedes añadir ' . $disponible . ' unidad(es) más. Actualmente tienes ' . $currentQty . ' en tu carrito y hay ' . $producto['stock'] . ' en stock.'
+                            ];
+                        }
                     }
                     break;
                 }
@@ -128,7 +137,7 @@ class CarritoController
         if ($cantidad > $targetItem['stock']) {
             return [
                 'success' => false,
-                'message' => 'No hay suficiente stock disponible'
+                'message' => 'Error: No hay suficiente stock disponible. Solo hay ' . $targetItem['stock'] . ' unidad(es) disponibles.'
             ];
         }
 

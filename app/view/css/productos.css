@@ -181,27 +181,50 @@
   margin: 5px 0;
 }
 
+/* Ajuste de estilos para los botones en product-actions */
 .product-actions {
   padding: 0 15px 15px;
   display: flex;
   gap: 10px;
+  flex-direction: column; /* Cambiado a columna para que los botones ocupen todo el ancho */
+}
+
+.btn-secondary,
+.btn-add-cart {
+  display: block;
+  text-align: center;
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  margin-bottom: 8px; /* Espacio entre botones */
+  width: 100%; /* Ancho completo */
+}
+
+.btn-secondary {
+  background-color: #2e294e;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #3d366a;
 }
 
 .btn-add-cart {
   background-color: #4caf50;
   color: white;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 5px;
-  flex: 1;
-  text-align: center;
-  text-decoration: none;
-  font-weight: 500;
-  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-add-cart:hover {
   background-color: #45a049;
+}
+
+.btn-add-cart i {
+  margin-right: 5px;
 }
 
 .out-of-stock {
@@ -221,6 +244,55 @@
   background-color: #f8f9fa;
   border-radius: 8px;
   color: #666;
+}
+
+/* Notificación de carrito */
+.cart-notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 5px;
+  padding: 0;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 1000;
+  pointer-events: none;
+  max-width: 300px;
+}
+
+.cart-notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cart-notification.success .notification-content {
+  border-left: 4px solid #4caf50;
+}
+
+.cart-notification.error .notification-content {
+  border-left: 4px solid #e63946;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+}
+
+.notification-content i {
+  margin-right: 10px;
+  font-size: 1.2rem;
+}
+
+.cart-notification.success i {
+  color: #4caf50;
+}
+
+.cart-notification.error i {
+  color: #e63946;
 }
 
 /* Responsive */

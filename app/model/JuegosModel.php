@@ -156,4 +156,44 @@ class JuegosModel
             return [];
         }
     }
+
+    /**
+     * Obtener juegos relacionados excluyendo uno específico
+     * 
+     * @param int $idJuego ID del juego a excluir
+     * @param array $filtros Filtros adicionales (opcional)
+     * @param int $limit Límite de resultados (opcional)
+     * @return array Array con los juegos relacionados
+     */
+    public function getRelatedJuegos($idJuego, $filtros = [], $limit = 4)
+    {
+        try {
+            $query = "SELECT * FROM juegos WHERE ID_J != :idJuego";
+            $params = [':idJuego' => $idJuego];
+
+            if (!empty($filtros)) {
+                foreach ($filtros as $key => $value) {
+                    $query .= " AND $key = :$key";
+                    $params[":$key"] = $value;
+                }
+            }
+
+            $query .= " ORDER BY RAND() LIMIT :limit";
+
+            $stmt = $this->conn->prepare($query);
+
+            foreach ($params as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+
+            // LIMIT requiere PDO::PARAM_INT
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error obteniendo juegos relacionados: " . $e->getMessage());
+            return [];
+        }
+    }
 }
