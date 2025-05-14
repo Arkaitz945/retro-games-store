@@ -1,6 +1,7 @@
 <?php
 
-require_once "../../config/dbConnection.php";
+// Fix the path to use __DIR__ for a more reliable absolute path
+require_once __DIR__ . "/../../config/dbConnection.php";
 
 class JuegosModel
 {
@@ -188,6 +189,161 @@ class JuegosModel
 
             // LIMIT requiere PDO::PARAM_INT
             $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error obteniendo juegos relacionados: " . $e->getMessage());
+            return [];
+        }
+    }
+    public function createJuego($juego)
+    {
+        try {
+            // Asumiendo que hay una conexión a la base de datos como propiedad de la clase
+            $stmt = $this->conn->prepare("INSERT INTO juegos (nombre, plataforma, precio, stock, descripcion, genero, estado, imagen) 
+                                        VALUES (:nombre, :plataforma, :precio, :stock, :descripcion, :genero, :estado, :imagen)");
+
+            return $stmt->execute([
+                ':nombre' => $juego['nombre'],
+                ':plataforma' => $juego['plataforma'],
+                ':precio' => $juego['precio'],
+                ':stock' => $juego['stock'],
+                ':descripcion' => $juego['descripcion'] ?? '',
+                ':genero' => $juego['genero'] ?? null,
+                ':estado' => $juego['estado'] ?? null,
+                ':imagen' => $juego['imagen'] ?? null
+            ]);
+        } catch (PDOException $e) {
+            // Manejar error
+            return false;
+        }
+    }
+
+    /**
+     * Actualiza un juego existente
+     * 
+     * @param int $id ID del juego a actualizar
+     * @param array $juego Datos del juego
+     * @return bool Resultado de la operación
+     */
+    public function updateJuego($id, $juego)
+    {
+        try {
+            $query = "UPDATE juegos SET 
+                nombre = :nombre, 
+                plataforma = :plataforma, 
+                genero = :genero, 
+                descripcion = :descripcion, 
+                estado = :estado, 
+                precio = :precio, 
+                stock = :stock";
+
+            // Campos opcionales con valores especiales si se proporcionan
+            if (isset($juego['desarrollador'])) {
+                $query .= ", desarrollador = :desarrollador";
+            }
+            if (isset($juego['publisher'])) {
+                $query .= ", publisher = :publisher";
+            }
+            if (isset($juego['año_lanzamiento'])) {
+                $query .= ", año_lanzamiento = :anio_lanzamiento";
+            }
+            if (isset($juego['incluye_caja'])) {
+                $query .= ", incluye_caja = :incluye_caja";
+            }
+            if (isset($juego['incluye_manual'])) {
+                $query .= ", incluye_manual = :incluye_manual";
+            }
+            if (isset($juego['region'])) {
+                $query .= ", region = :region";
+            }
+            if (!empty($juego['imagen'])) {
+                $query .= ", imagen = :imagen";
+            }
+
+            $query .= " WHERE ID_J = :id";
+
+            $stmt = $this->conn->prepare($query);
+
+            // Parámetros básicos
+            $params = [
+                ':nombre' => $juego['nombre'],
+                ':plataforma' => $juego['plataforma'],
+                ':genero' => $juego['genero'] ?? null,
+                ':descripcion' => $juego['descripcion'] ?? '',
+                ':estado' => $juego['estado'] ?? 'Usado',
+                ':precio' => $juego['precio'],
+                ':stock' => $juego['stock'],
+                ':id' => $id
+            ];
+
+            // Parámetros opcionales
+            if (isset($juego['desarrollador'])) {
+                $params[':desarrollador'] = $juego['desarrollador'];
+            }
+            if (isset($juego['publisher'])) {
+                $params[':publisher'] = $juego['publisher'];
+            }
+            if (isset($juego['año_lanzamiento'])) {
+                $params[':anio_lanzamiento'] = $juego['año_lanzamiento'];
+            }
+            if (isset($juego['incluye_caja'])) {
+                $params[':incluye_caja'] = $juego['incluye_caja'];
+            }
+            if (isset($juego['incluye_manual'])) {
+                $params[':incluye_manual'] = $juego['incluye_manual'];
+            }
+            if (isset($juego['region'])) {
+                $params[':region'] = $juego['region'];
+            }
+            if (!empty($juego['imagen'])) {
+                $params[':imagen'] = $juego['imagen'];
+            }
+
+            return $stmt->execute($params);
+        } catch (PDOException $e) {
+            error_log("Error actualizando juego: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Elimina un juego
+     * 
+     * @param int $id ID del juego a eliminar
+     * @return bool Resultado de la operación
+     */
+    public function deleteJuego($id)
+    {
+        try {
+            $stmt = $this->conn->prepare("DELETE FROM juegos WHERE ID_J = :id");
+            return $stmt->execute([':id' => $id]);
+        } catch (PDOException $e) {
+            error_log("Error eliminando juego: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Obtiene juegos relacionados por plataforma y/o género
+     * 
+     * @param int $idJuego ID del juego a excluir
+     * @param string $plataforma Plataforma del juego
+     * @param string $genero Género del juego
+     * @param int $limit Límite de resultados
+     * @return array Juegos relacionados
+     */
+    public function getJuegosRelacionados($idJuego, $plataforma, $genero, $limit = 4)
+    {
+        try {
+            $query = "SELECT * FROM juegos WHERE ID_J != :idJuego AND (plataforma = :plataforma OR genero = :genero) ORDER BY RAND() LIMIT :limit";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idJuego', $idJuego, PDO::PARAM_INT);
+            $stmt->bindParam(':plataforma', $plataforma);
+            $stmt->bindParam(':genero', $genero);
+            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
 
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);

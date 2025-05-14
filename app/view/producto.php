@@ -334,14 +334,23 @@ if (!$juego) {
                     const cantidad = parseInt(document.getElementById('product-quantity').value);
 
                     // Petición AJAX para añadir al carrito
-                    fetch(`carrito.php?action=add&tipo=${tipo}&id=${id}&cantidad=${cantidad}`)
-                        .then(response => response.json()) // Cambiado de text a json
+                    fetch(`ajax_add_to_cart.php?action=add&tipo=${tipo}&id=${id}&cantidad=${cantidad}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Error de red al añadir al carrito');
+                            }
+                            return response.json();
+                        })
                         .then(data => {
                             if (data.success) {
                                 // Mostrar notificación de éxito
                                 showToast(`${nombre} (${cantidad} unidad${cantidad > 1 ? 'es' : ''}) se ha añadido correctamente a tu carrito`, false);
                                 // Actualizar contador del carrito
-                                updateCartCounter();
+                                if (data.cartCount) {
+                                    updateCartBadge(data.cartCount);
+                                } else {
+                                    updateCartCounter();
+                                }
                             } else {
                                 // Mostrar notificación de error con el mensaje específico del servidor
                                 showToast(data.message || 'Error al añadir el producto al carrito', true);
@@ -389,17 +398,22 @@ if (!$juego) {
             fetch('get_cart_count.php')
                 .then(response => response.json())
                 .then(data => {
-                    const badges = document.querySelectorAll('.cart-badge');
-                    if (badges.length > 0) {
-                        badges.forEach(badge => {
-                            badge.textContent = data.count;
-                            badge.style.display = data.count > 0 ? 'inline-block' : 'none';
-                        });
-                    }
+                    updateCartBadge(data.count);
                 })
                 .catch(error => {
                     console.error('Error al actualizar contador:', error);
                 });
+        }
+
+        // Función para actualizar el badge del carrito
+        function updateCartBadge(count) {
+            const badges = document.querySelectorAll('.cart-badge');
+            if (badges.length > 0) {
+                badges.forEach(badge => {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'inline-block' : 'none';
+                });
+            }
         }
     </script>
 </body>

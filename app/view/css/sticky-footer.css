@@ -1,0 +1,33 @@
+/* Sticky Footer Styles - Override file */
+html,
+body {
+  height: 100% !important;
+}
+
+body {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 100vh !important;
+}
+
+main {
+  flex: 1 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+main > .container {
+  flex: 1 0 auto !important;
+}
+
+.main-footer {
+  margin-top: auto !important;
+  flex-shrink: 0 !important;
+}
+
+/* Fix for potential margin issues */
+main:after {
+  content: "";
+  display: block;
+  height: 0;
+}

@@ -61,106 +61,124 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
         </div>
     </header>
 
-    <!-- Banner promocional -->
-    <section class="hero-banner">
-        <div class="hero-content">
-            <h2>Revive la magia de los clásicos</h2>
-            <p>Tu destino para videojuegos, consolas y revistas retro</p>
-            <a href="#catalogo" class="btn-primary">Ver Catálogo</a>
-        </div>
-    </section>
+    <main>
+        <?php if (isset($_SESSION['registro_exitoso'])): ?>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> <?php echo $_SESSION['registro_exitoso']; ?>
+                <?php unset($_SESSION['registro_exitoso']); ?>
+            </div>
+        <?php endif; ?>
 
-    <!-- Presentación de la tienda -->
-    <section class="about-section">
-        <div class="container">
-            <h2>Bienvenido a RetroGames Store</h2>
-            <p>
-                En RetroGames Store, nos apasiona la historia de los videojuegos. Somos tu destino
-                para encontrar esos tesoros de la infancia que marcaron una época. Desde las primeras
-                consolas hasta los títulos más emblemáticos, nuestra misión es preservar el legado
-                del gaming retro y compartirlo con las nuevas generaciones.
-            </p>
-            <p>
-                Ofrecemos una cuidadosa selección de videojuegos, consolas restauradas y revistas
-                especializadas que capturan la esencia de cada era. Todos nuestros productos son
-                verificados y probados para garantizar su funcionamiento.
-            </p>
-        </div>
-    </section>
+        <?php if (isset($_SESSION['login_message'])): ?>
+            <div class="alert alert-success">
+                <i class="fas fa-check-circle"></i> <?php echo $_SESSION['login_message']; ?>
+                <?php unset($_SESSION['login_message']); ?>
+            </div>
+        <?php endif; ?>
 
-    <!-- Categorías de productos -->
-    <section id="catalogo" class="categories-section">
-        <div class="container">
-            <h2>Explora nuestro catálogo</h2>
-            <div class="categories-grid">
-                <div class="category-card">
-                    <div class="category-img videogames-img"></div>
-                    <h3>Videojuegos</h3>
-                    <p>Desde clásicos de NES hasta joyas de PlayStation, tenemos títulos para todas las generaciones.</p>
-                    <a href="videojuegos.php" class="btn-secondary">Ver Videojuegos</a>
-                </div>
+        <!-- Resto del contenido de la página... -->
 
-                <div class="category-card">
-                    <div class="category-img consoles-img"></div>
-                    <h3>Consolas</h3>
-                    <p>Consolas vintage en perfecto estado, restauradas y listas para revivir la magia.</p>
-                    <a href="consolas.php" class="btn-secondary">Ver Consolas</a>
-                </div>
+        <!-- Banner promocional -->
+        <section class="hero-banner">
+            <div class="hero-content">
+                <h2>Revive la magia de los clásicos</h2>
+                <p>Tu destino para videojuegos, consolas y revistas retro</p>
+                <a href="#catalogo" class="btn-primary">Ver Catálogo</a>
+            </div>
+        </section>
 
-                <div class="category-card">
-                    <div class="category-img magazines-img"></div>
-                    <h3>Revistas</h3>
-                    <p>Publicaciones originales que documentan la evolución de los videojuegos a lo largo de las décadas.</p>
-                    <a href="revistas.php" class="btn-secondary">Ver Revistas</a>
-                </div>
+        <!-- Presentación de la tienda -->
+        <section class="about-section">
+            <div class="container">
+                <h2>Bienvenido a RetroGames Store</h2>
+                <p>
+                    En RetroGames Store, nos apasiona la historia de los videojuegos. Somos tu destino
+                    para encontrar esos tesoros de la infancia que marcaron una época. Desde las primeras
+                    consolas hasta los títulos más emblemáticos, nuestra misión es preservar el legado
+                    del gaming retro y compartirlo con las nuevas generaciones.
+                </p>
+                <p>
+                    Ofrecemos una cuidadosa selección de videojuegos, consolas restauradas y revistas
+                    especializadas que capturan la esencia de cada era. Todos nuestros productos son
+                    verificados y probados para garantizar su funcionamiento.
+                </p>
+            </div>
+        </section>
 
-                <div class="category-card">
-                    <div class="category-img accessories-img"></div>
-                    <h3>Accesorios</h3>
-                    <p>Mandos, adaptadores, fundas y todo lo necesario para completar tu experiencia retro.</p>
-                    <a href="accesorios.php" class="btn-secondary">Ver Accesorios</a>
+        <!-- Categorías de productos -->
+        <section id="catalogo" class="categories-section">
+            <div class="container">
+                <h2>Explora nuestro catálogo</h2>
+                <div class="categories-grid">
+                    <div class="category-card">
+                        <div class="category-img videogames-img"></div>
+                        <h3>Videojuegos</h3>
+                        <p>Desde clásicos de NES hasta joyas de PlayStation, tenemos títulos para todas las generaciones.</p>
+                        <a href="videojuegos.php" class="btn-secondary">Ver Videojuegos</a>
+                    </div>
+
+                    <div class="category-card">
+                        <div class="category-img consoles-img"></div>
+                        <h3>Consolas</h3>
+                        <p>Consolas vintage en perfecto estado, restauradas y listas para revivir la magia.</p>
+                        <a href="consolas.php" class="btn-secondary">Ver Consolas</a>
+                    </div>
+
+                    <div class="category-card">
+                        <div class="category-img magazines-img"></div>
+                        <h3>Revistas</h3>
+                        <p>Publicaciones originales que documentan la evolución de los videojuegos a lo largo de las décadas.</p>
+                        <a href="revistas.php" class="btn-secondary">Ver Revistas</a>
+                    </div>
+
+                    <div class="category-card">
+                        <div class="category-img accessories-img"></div>
+                        <h3>Accesorios</h3>
+                        <p>Mandos, adaptadores, fundas y todo lo necesario para completar tu experiencia retro.</p>
+                        <a href="accesorios.php" class="btn-secondary">Ver Accesorios</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- Sección de novedades o destacados -->
-    <section class="featured-section">
-        <div class="container">
-            <h2>Productos Destacados</h2>
-            <div class="featured-grid">
-                <!-- Aquí iría un loop PHP para mostrar productos destacados de la base de datos -->
-                <!-- Por ahora, colocaré algunos ejemplos estáticos -->
-                <div class="product-card">
-                    <div class="product-img" style="background-image: url('img/products/super-mario-64.jpg');"></div>
-                    <h3>Super Mario 64</h3>
-                    <p class="price">59.99€</p>
-                    <a href="producto.php?id=1" class="btn-secondary">Ver Detalles</a>
-                </div>
+        <!-- Sección de novedades o destacados -->
+        <section class="featured-section">
+            <div class="container">
+                <h2>Productos Destacados</h2>
+                <div class="featured-grid">
+                    <!-- Aquí iría un loop PHP para mostrar productos destacados de la base de datos -->
+                    <!-- Por ahora, colocaré algunos ejemplos estáticos -->
+                    <div class="product-card">
+                        <div class="product-img" style="background-image: url('img/products/super-mario-64.jpg');"></div>
+                        <h3>Super Mario 64</h3>
+                        <p class="price">59.99€</p>
+                        <a href="producto.php?id=1" class="btn-secondary">Ver Detalles</a>
+                    </div>
 
-                <div class="product-card">
-                    <div class="product-img" style="background-image: url('img/products/ps1.jpg');"></div>
-                    <h3>PlayStation 1</h3>
-                    <p class="price">89.99€</p>
-                    <a href="producto.php?id=2" class="btn-secondary">Ver Detalles</a>
-                </div>
+                    <div class="product-card">
+                        <div class="product-img" style="background-image: url('img/products/ps1.jpg');"></div>
+                        <h3>PlayStation 1</h3>
+                        <p class="price">89.99€</p>
+                        <a href="producto.php?id=2" class="btn-secondary">Ver Detalles</a>
+                    </div>
 
-                <div class="product-card">
-                    <div class="product-img" style="background-image: url('img/products/super-nes.jpg');"></div>
-                    <h3>Super Nintendo</h3>
-                    <p class="price">109.99€</p>
-                    <a href="producto.php?id=3" class="btn-secondary">Ver Detalles</a>
-                </div>
+                    <div class="product-card">
+                        <div class="product-img" style="background-image: url('img/products/super-nes.jpg');"></div>
+                        <h3>Super Nintendo</h3>
+                        <p class="price">109.99€</p>
+                        <a href="producto.php?id=3" class="btn-secondary">Ver Detalles</a>
+                    </div>
 
-                <div class="product-card">
-                    <div class="product-img" style="background-image: url('img/products/zelda-ocarina.jpg');"></div>
-                    <h3>Zelda: Ocarina of Time</h3>
-                    <p class="price">69.99€</p>
-                    <a href="producto.php?id=4" class="btn-secondary">Ver Detalles</a>
+                    <div class="product-card">
+                        <div class="product-img" style="background-image: url('img/products/zelda-ocarina.jpg');"></div>
+                        <h3>Zelda: Ocarina of Time</h3>
+                        <p class="price">69.99€</p>
+                        <a href="producto.php?id=4" class="btn-secondary">Ver Detalles</a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+    </main>
 
     <!-- Footer -->
     <footer class="main-footer">

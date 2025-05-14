@@ -236,7 +236,7 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                     <h3>Síguenos</h3>
                     <div class="social-links">
                         <a href="#"><i class="fab fa-facebook"></i></a>
-                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class "fab fa-twitter"></i></a>
                         <a href="#"><i class="fab fa-instagram"></i></a>
                         <a href="#"><i class="fab fa-youtube"></i></a>
                     </div>
