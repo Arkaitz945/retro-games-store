@@ -46,6 +46,7 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
     <title>Videojuegos - RetroGames Store</title>
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/productos.css">
+    <link rel="stylesheet" href="css/videojuegos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/notification.css">
 </head>

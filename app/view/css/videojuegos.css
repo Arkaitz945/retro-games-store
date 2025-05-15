@@ -1,0 +1,109 @@
+/* ...existing code... */
+
+.product-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto;
+  width: 100%;
+}
+
+.price {
+  font-weight: 700;
+  color: #e63946;
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  width: 100%;
+  text-align: center;
+}
+
+.btn-view {
+  display: inline-block;
+  background-color: #2e294e;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+  text-decoration: none;
+  text-align: center;
+  width: 100%;
+}
+
+.btn-view:hover {
+  background-color: #3d366a;
+  color: white;
+}
+
+.btn-add {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.btn-add:hover {
+  background-color: #45a049;
+}
+
+/* Product actions and buttons */
+.product-actions {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.btn-secondary {
+  display: inline-block;
+  background-color: #2e294e;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+  text-decoration: none;
+  text-align: center;
+  width: 100%;
+}
+
+.btn-secondary:hover {
+  background-color: #3d366a;
+  color: white;
+}
+
+.btn-add-cart {
+  width: 100%;
+  padding: 10px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.btn-add-cart:hover {
+  background-color: #45a049;
+}
+
+.out-of-stock {
+  width: 100%;
+  padding: 10px;
+  background-color: #f8d7da;
+  color: #721c24;
+  text-align: center;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+/* ...existing code... */
