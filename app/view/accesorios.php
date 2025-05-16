@@ -125,6 +125,9 @@ session_start();
                 <li><a href="consolas.php">Consolas</a></li>
                 <li><a href="revistas.php">Revistas</a></li>
                 <li><a href="accesorios.php" class="active">Accesorios</a></li>
+                <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+                    <li><a href="admin/dashboard.php">Admin Panel</a></li>
+                <?php endif; ?>
             </ul>
         </nav>
         <div class="user-menu">
@@ -136,11 +139,17 @@ session_start();
                         <i class="fas fa-caret-down"></i>
                     </button>
                     <div class="dropdown-content">
-                        <a href="ajustes.php"><i class="fas fa-cog"></i> Ajustes</a>
-                        <a href="pedidos.php"><i class="fas fa-box"></i> Mis Pedidos</a>
                         <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
-                            <a href="admin/dashboard.php"><i class="fas fa-user-shield"></i> Admin Panel</a>
+                            <a href="admin/dashboard.php"><i class="fas fa-user-shield"></i> Panel de Administración</a>
+                            <div class="dropdown-divider"></div>
                         <?php endif; ?>
+                        <a href="pedidos.php"><i class="fas fa-box"></i> Mis Pedidos</a>
+                        <a href="carrito.php"><i class="fas fa-shopping-cart"></i> Carrito
+                            <?php if (isset($_SESSION['carrito']) && !empty($_SESSION['carrito'])): ?>
+                                <span class="cart-badge"><?php echo array_sum(array_column($_SESSION['carrito'], 'cantidad')); ?></span>
+                            <?php endif; ?>
+                        </a>
+                        <a href="ajustes.php"><i class="fas fa-cog"></i> Ajustes</a>
                         <div class="dropdown-divider"></div>
                         <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
                     </div>
@@ -148,13 +157,6 @@ session_start();
             <?php else: ?>
                 <a href="login.php" class="login-btn"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a>
             <?php endif; ?>
-
-            <a href="carrito.php" class="cart-btn">
-                <i class="fas fa-shopping-cart"></i>
-                <?php if (isset($_SESSION['carrito']) && !empty($_SESSION['carrito'])): ?>
-                    <span class="cart-badge"><?php echo array_sum(array_column($_SESSION['carrito'], 'cantidad')); ?></span>
-                <?php endif; ?>
-            </a>
         </div>
     </header>
 
@@ -215,6 +217,25 @@ session_start();
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // JavaScript para el menú desplegable del usuario
+            const userBtn = document.querySelector('.user-btn');
+            const dropdownContent = document.querySelector('.dropdown-content');
+
+            if (userBtn && dropdownContent) {
+                userBtn.addEventListener('click', function() {
+                    dropdownContent.classList.toggle('show');
+                });
+
+                // Cerrar el menú si el usuario hace clic afuera
+                window.addEventListener('click', function(event) {
+                    if (!event.target.matches('.user-btn') && !event.target.parentNode.matches('.user-btn')) {
+                        if (dropdownContent.classList.contains('show')) {
+                            dropdownContent.classList.remove('show');
+                        }
+                    }
+                });
+            }
+
             // Formulario de notificación
             const notifyForm = document.querySelector('.notify-form');
             if (notifyForm) {

@@ -64,6 +64,9 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                 <li><a href="consolas.php">Consolas</a></li>
                 <li><a href="revistas.php" class="active">Revistas</a></li>
                 <li><a href="accesorios.php">Accesorios</a></li>
+                <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+                    <li><a href="admin/dashboard.php">Admin Panel</a></li>
+                <?php endif; ?>
             </ul>
         </nav>
         <div class="user-menu">
@@ -75,11 +78,17 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                         <i class="fas fa-caret-down"></i>
                     </button>
                     <div class="dropdown-content">
-                        <a href="ajustes.php"><i class="fas fa-cog"></i> Ajustes</a>
-                        <a href="pedidos.php"><i class="fas fa-box"></i> Mis Pedidos</a>
                         <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
-                            <a href="admin/dashboard.php"><i class="fas fa-user-shield"></i> Admin Panel</a>
+                            <a href="admin/dashboard.php"><i class="fas fa-user-shield"></i> Panel de Administración</a>
+                            <div class="dropdown-divider"></div>
                         <?php endif; ?>
+                        <a href="pedidos.php"><i class="fas fa-box"></i> Mis Pedidos</a>
+                        <a href="carrito.php"><i class="fas fa-shopping-cart"></i> Carrito
+                            <?php if (isset($_SESSION['carrito']) && !empty($_SESSION['carrito'])): ?>
+                                <span class="cart-badge"><?php echo array_sum(array_column($_SESSION['carrito'], 'cantidad')); ?></span>
+                            <?php endif; ?>
+                        </a>
+                        <a href="ajustes.php"><i class="fas fa-cog"></i> Ajustes</a>
                         <div class="dropdown-divider"></div>
                         <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
                     </div>
@@ -87,13 +96,6 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
             <?php else: ?>
                 <a href="login.php" class="login-btn"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a>
             <?php endif; ?>
-
-            <a href="carrito.php" class="cart-btn">
-                <i class="fas fa-shopping-cart"></i>
-                <?php if (isset($_SESSION['carrito']) && !empty($_SESSION['carrito'])): ?>
-                    <span class="cart-badge"><?php echo array_sum(array_column($_SESSION['carrito'], 'cantidad')); ?></span>
-                <?php endif; ?>
-            </a>
         </div>
     </header>
 
@@ -239,67 +241,23 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                 });
             });
 
-            // Manejar los botones de añadir al carrito
-            document.querySelectorAll('.btn-add-cart').forEach(button => {
-                button.addEventListener('click', function(e) {
-                    e.preventDefault();
+            // JavaScript para el menú desplegable del usuario
+            const userBtn = document.querySelector('.user-btn');
+            const dropdownContent = document.querySelector('.dropdown-content');
 
-                    // Obtener información del producto
-                    const productId = this.getAttribute('data-id');
-                    const productType = this.getAttribute('data-tipo') || 'revista';
-                    const productName = this.getAttribute('data-nombre');
-
-                    // Hacer una petición AJAX para añadir al carrito
-                    fetch(`ajax_add_to_cart.php?action=add&tipo=${productType}&id=${productId}`)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Error de red al añadir al carrito');
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            if (data.success) {
-                                // Mostrar notificación de éxito
-                                showToast(`${productName} se ha añadido correctamente a tu carrito`, false);
-                                // Actualizar contador del carrito
-                                if (data.cartCount) {
-                                    updateCartBadge(data.cartCount);
-                                } else {
-                                    updateCartCounter();
-                                }
-                            } else {
-                                // Mostrar notificación de error
-                                showToast(data.message || 'Error al añadir el producto al carrito', true);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            showToast('Error al añadir el producto al carrito', true);
-                        });
+            if (userBtn && dropdownContent) {
+                userBtn.addEventListener('click', function() {
+                    dropdownContent.classList.toggle('show');
                 });
-            });
 
-            // Función para actualizar el contador del carrito
-            function updateCartCounter() {
-                fetch('get_cart_count.php')
-                    .then(response => response.json())
-                    .then(data => {
-                        updateCartBadge(data.count);
-                    })
-                    .catch(error => {
-                        console.error('Error al actualizar contador:', error);
-                    });
-            }
-
-            // Función para actualizar el badge del carrito
-            function updateCartBadge(count) {
-                const badges = document.querySelectorAll('.cart-badge');
-                if (badges.length > 0) {
-                    badges.forEach(badge => {
-                        badge.textContent = count;
-                        badge.style.display = count > 0 ? 'inline-block' : 'none';
-                    });
-                }
+                // Cerrar el menú si el usuario hace clic afuera
+                window.addEventListener('click', function(event) {
+                    if (!event.target.matches('.user-btn') && !event.target.parentNode.matches('.user-btn')) {
+                        if (dropdownContent.classList.contains('show')) {
+                            dropdownContent.classList.remove('show');
+                        }
+                    }
+                });
             }
         });
 

@@ -16,7 +16,12 @@ class UsuariosAdminController
      */
     public function getAllUsuarios()
     {
-        return $this->usuariosModel->getAllUsuarios();
+        $usuarios = $this->usuariosModel->getAllUsuarios();
+
+        // Depuración
+        error_log("UsuariosAdminController: Se obtuvieron " . count($usuarios) . " usuarios");
+
+        return $usuarios;
     }
 
     /**

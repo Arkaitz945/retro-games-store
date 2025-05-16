@@ -9,26 +9,28 @@ class UsuariosModel
     public function __construct()
     {
         $this->conn = getDBConnection();
-
-        if (!$this->conn) {
-            die("Error: No se pudo conectar a la base de datos");
-        }
     }
 
     /**
      * Obtener todos los usuarios
-     * 
-     * @return array Array con los usuarios
      */
     public function getAllUsuarios()
     {
         try {
-            $query = "SELECT * FROM usuarios ORDER BY fecha_registro DESC";
+            // Consulta SQL para obtener todos los usuarios - usar la tabla real de tu base de datos
+            // Depuración para mostrar la consulta en el log
+            $query = "SELECT * FROM usuario ORDER BY id";
+            error_log("Consulta SQL: " . $query);
+
             $stmt = $this->conn->prepare($query);
             $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("Usuarios encontrados: " . count($usuarios));
+
+            return $usuarios;
         } catch (PDOException $e) {
-            error_log("Error obteniendo usuarios: " . $e->getMessage());
+            error_log("Error en getAllUsuarios: " . $e->getMessage());
             return [];
         }
     }

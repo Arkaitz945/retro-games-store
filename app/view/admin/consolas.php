@@ -11,27 +11,25 @@ if (!isset($_SESSION['usuario'])) {
 }
 
 // Incluir controlador
-require_once "../controller/JuegosController.php";
-require_once "../controller/CarritoController.php";
+require_once "../../controller/ConsolasController.php";
+require_once "../../controller/CarritoController.php";
 
-$juegosController = new JuegosController();
+$consolasController = new ConsolasController();
 $carritoController = new CarritoController();
 $cantidadCarrito = isset($_SESSION['id']) ? $carritoController->countCartItems($_SESSION['id']) : 0;
 
 // Obtener filtros de la URL
 $filtros = [];
-if (isset($_GET['plataforma'])) $filtros['plataforma'] = $_GET['plataforma'];
-if (isset($_GET['genero'])) $filtros['genero'] = $_GET['genero'];
+if (isset($_GET['fabricante'])) $filtros['fabricante'] = $_GET['fabricante'];
 if (isset($_GET['estado'])) $filtros['estado'] = $_GET['estado'];
 if (isset($_GET['precio_max']) && is_numeric($_GET['precio_max'])) $filtros['precio_max'] = $_GET['precio_max'];
 
 // Obtener datos para los filtros
-$plataformas = $juegosController->getPlataformas();
-$generos = $juegosController->getGeneros();
-$estados = $juegosController->getEstados();
+$fabricantes = $consolasController->getFabricantes();
+$estados = $consolasController->getEstados();
 
-// Obtener juegos según filtros
-$juegos = $juegosController->getJuegos($filtros);
+// Obtener consolas según filtros
+$consolas = $consolasController->getConsolas($filtros);
 
 $nombreUsuario = $_SESSION['usuario'];
 $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
@@ -43,12 +41,15 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Videojuegos - RetroGames Store</title>
-    <link rel="stylesheet" href="css/home.css">
-    <link rel="stylesheet" href="css/productos.css">
-    <link rel="stylesheet" href="css/videojuegos.css">
+    <title>Consolas - RetroGames Store</title>
+    <link rel="stylesheet" href="../css/home.css">
+    <link rel="stylesheet" href="../css/productos.css">
+    <link rel="stylesheet" href="../css/consolas.css">
+    <link rel="stylesheet" href="../css/notification.css">
+    <link rel="stylesheet" href="../css/sticky-footer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/notification.css">
+    <!-- Añadir esta línea en el head para incluir el nuevo CSS -->
+    <link rel="stylesheet" href="css/admin-modal.css">
 </head>
 
 <body>
@@ -62,13 +63,10 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
         <nav class="main-nav">
             <ul>
                 <li><a href="home.php">Inicio</a></li>
-                <li><a href="videojuegos.php" class="active">Videojuegos</a></li>
-                <li><a href="consolas.php">Consolas</a></li>
+                <li><a href="videojuegos.php">Videojuegos</a></li>
+                <li><a href="consolas.php" class="active">Consolas</a></li>
                 <li><a href="revistas.php">Revistas</a></li>
                 <li><a href="accesorios.php">Accesorios</a></li>
-                <?php if ($esAdmin): ?>
-                    <li><a href="admin/dashboard.php">Admin Panel</a></li>
-                <?php endif; ?>
             </ul>
         </nav>
         <div class="user-menu">
@@ -97,33 +95,21 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
     <main>
         <div class="container">
             <div class="page-header">
-                <h1>Videojuegos Retro</h1>
-                <p>Explora nuestra colección de videojuegos clásicos de diferentes plataformas y épocas.</p>
+                <h1>Consolas Retro</h1>
+                <p>Explora nuestra colección de consolas clásicas de diferentes marcas y modelos.</p>
             </div>
 
             <!-- Filtros -->
             <div class="filters-container">
                 <h3>Filtrar por:</h3>
-                <form action="videojuegos.php" method="GET" class="filters-form">
+                <form action="consolas.php" method="GET" class="filters-form">
                     <div class="filter-group">
-                        <label for="plataforma">Plataforma:</label>
-                        <select name="plataforma" id="plataforma">
-                            <option value="">Todas las plataformas</option>
-                            <?php foreach ($plataformas as $plataforma): ?>
-                                <option value="<?php echo $plataforma; ?>" <?php echo (isset($_GET['plataforma']) && $_GET['plataforma'] == $plataforma) ? 'selected' : ''; ?>>
-                                    <?php echo $plataforma; ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-
-                    <div class="filter-group">
-                        <label for="genero">Género:</label>
-                        <select name="genero" id="genero">
-                            <option value="">Todos los géneros</option>
-                            <?php foreach ($generos as $genero): ?>
-                                <option value="<?php echo $genero; ?>" <?php echo (isset($_GET['genero']) && $_GET['genero'] == $genero) ? 'selected' : ''; ?>>
-                                    <?php echo $genero; ?>
+                        <label for="fabricante">Fabricante:</label>
+                        <select name="fabricante" id="fabricante">
+                            <option value="">Todos los fabricantes</option>
+                            <?php foreach ($fabricantes as $fabricante): ?>
+                                <option value="<?php echo $fabricante; ?>" <?php echo (isset($_GET['fabricante']) && $_GET['fabricante'] == $fabricante) ? 'selected' : ''; ?>>
+                                    <?php echo $fabricante; ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -148,41 +134,40 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 
                     <div class="filter-buttons">
                         <button type="submit" class="btn-filter">Aplicar filtros</button>
-                        <a href="videojuegos.php" class="btn-clear">Limpiar filtros</a>
+                        <a href="consolas.php" class="btn-clear">Limpiar filtros</a>
                     </div>
                 </form>
             </div>
 
             <!-- Resultados -->
             <div class="results-info">
-                <p>Se encontraron <?php echo count($juegos); ?> productos</p>
+                <p>Se encontraron <?php echo count($consolas); ?> productos</p>
             </div>
 
             <!-- Productos -->
             <div class="products-grid">
-                <?php if (empty($juegos)): ?>
+                <?php if (empty($consolas)): ?>
                     <div class="no-results">
-                        <p>No se encontraron juegos con los filtros seleccionados.</p>
+                        <p>No se encontraron consolas con los filtros seleccionados.</p>
                     </div>
                 <?php else: ?>
-                    <?php foreach ($juegos as $juego): ?>
+                    <?php foreach ($consolas as $consola): ?>
                         <div class="product-card">
-                            <div class="product-img" style="background-image: url('<?php echo htmlspecialchars($juego['imagen']); ?>');"></div>
-                            <div class="product-platform"><?php echo htmlspecialchars($juego['plataforma']); ?></div>
-                            <h3><?php echo htmlspecialchars($juego['nombre']); ?></h3>
+                            <div class="product-img" style="background-image: url('<?php echo htmlspecialchars($consola['imagen']); ?>');"></div>
+                            <div class="product-fabricante"><?php echo htmlspecialchars($consola['fabricante']); ?></div>
+                            <h3><?php echo htmlspecialchars($consola['nombre']); ?></h3>
                             <div class="product-details">
-                                <span class="product-genre"><?php echo htmlspecialchars($juego['genero']); ?></span>
-                                <span class="product-year"><?php echo htmlspecialchars($juego['año_lanzamiento']); ?></span>
+                                <span class="product-estado"><?php echo htmlspecialchars($consola['estado']); ?></span>
+                                <span class="product-year"><?php echo htmlspecialchars($consola['año_lanzamiento']); ?></span>
                             </div>
-                            <div class="product-condition"><?php echo htmlspecialchars($juego['estado']); ?></div>
-                            <p class="price"><?php echo number_format($juego['precio'], 2); ?>€</p>
+                            <p class="price"><?php echo number_format($consola['precio'], 2); ?>€</p>
                             <div class="product-actions">
-                                <a href="producto.php?id=<?php echo $juego['ID_J']; ?>" class="btn-secondary">Ver Detalles</a>
-                                <?php if ($juego['stock'] > 0): ?>
+                                <a href="consola_detalle.php?id=<?php echo $consola['ID_Consola']; ?>" class="btn-secondary">Ver Detalles</a>
+                                <?php if ($consola['stock'] > 0): ?>
                                     <button type="button" class="btn-add-cart"
-                                        data-id="<?php echo $juego['ID_J']; ?>"
-                                        data-tipo="juego"
-                                        data-nombre="<?php echo htmlspecialchars($juego['nombre']); ?>">
+                                        data-id="<?php echo $consola['ID_Consola']; ?>"
+                                        data-tipo="consola"
+                                        data-nombre="<?php echo htmlspecialchars($consola['nombre']); ?>">
                                         <i class="fas fa-cart-plus"></i> Añadir
                                     </button>
                                 <?php else: ?>
@@ -250,8 +235,8 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
     </footer>
 
     <script>
-        // JavaScript para el menú desplegable
         document.addEventListener('DOMContentLoaded', function() {
+            // JavaScript para el menú desplegable
             const userBtn = document.querySelector('.user-btn');
             const dropdownContent = document.querySelector('.dropdown-content');
 
@@ -275,7 +260,7 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 
                     // Obtener información del producto
                     const productId = this.getAttribute('data-id');
-                    const productType = this.getAttribute('data-tipo') || 'juego';
+                    const productType = this.getAttribute('data-tipo') || 'consola';
                     const productName = this.getAttribute('data-nombre');
 
                     // Hacer una petición AJAX para añadir al carrito
@@ -360,6 +345,49 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
         function closeToast() {
             document.getElementById('cart-toast').classList.remove('show');
         }
+    </script>
+
+    <!-- Reemplazar el modal de confirmación existente por este nuevo HTML -->
+    <div id="deleteModalOverlay" class="modal-overlay" style="display: none;">
+        <div class="confirm-dialog">
+            <h3>Confirmar eliminación</h3>
+            <p>¿Estás seguro de que deseas eliminar esta consola? Esta acción no se puede deshacer.</p>
+            <div class="confirm-buttons">
+                <button class="btn-cancel" onclick="cancelDelete()">Cancelar</button>
+                <button class="btn-delete" onclick="confirmDelete()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables para la eliminación
+        let consolaIdToDelete = null;
+
+        // Función para mostrar la confirmación de eliminación
+        function showDeleteConfirmation(id) {
+            consolaIdToDelete = id;
+            document.getElementById('deleteModalOverlay').style.display = 'flex';
+        }
+
+        // Función para cancelar la eliminación
+        function cancelDelete() {
+            consolaIdToDelete = null;
+            document.getElementById('deleteModalOverlay').style.display = 'none';
+        }
+
+        // Función para confirmar la eliminación
+        function confirmDelete() {
+            if (consolaIdToDelete) {
+                window.location.href = 'eliminar_consola.php?id=' + consolaIdToDelete;
+            }
+        }
+
+        // Si haces clic fuera del diálogo, también cancela
+        document.getElementById('deleteModalOverlay').addEventListener('click', function(e) {
+            if (e.target === this) {
+                cancelDelete();
+            }
+        });
     </script>
 </body>
 
