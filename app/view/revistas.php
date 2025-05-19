@@ -43,6 +43,7 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Revistas - RetroGames Store</title>
     <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/productos.css">
     <link rel="stylesheet" href="css/revistas.css">
     <link rel="stylesheet" href="css/notification.css">
     <link rel="stylesheet" href="css/sticky-footer.css">
@@ -50,7 +51,7 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
 </head>
 
 <body>
-    <!-- Banner superior (inline header) -->
+    <!-- Banner superior -->
     <header class="main-header">
         <div class="logo">
             <a href="home.php" class="logo-link">
@@ -103,20 +104,21 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
     <main>
         <div class="container">
             <div class="page-header">
-                <h1>Revistas de Videojuegos</h1>
-                <p>Explora nuestra colección de revistas especializadas en videojuegos retro</p>
+                <h1>Revistas Retro</h1>
+                <p>Explora nuestra colección de revistas clásicas de diferentes épocas y editoriales.</p>
             </div>
 
-            <!-- Sección de filtros (como en videojuegos) -->
+            <!-- Filtros -->
             <div class="filters-container">
                 <h3>Filtrar por:</h3>
-                <form action="" method="get" id="filter-form">
+                <br>
+                <form action="revistas.php" method="GET" class="filters-form">
                     <div class="filter-group">
                         <label for="editorial">Editorial:</label>
-                        <select name="editorial" id="editorial" class="filter-control">
+                        <select name="editorial" id="editorial">
                             <option value="">Todas las editoriales</option>
-                            <?php foreach ($editoriales as $editorial) : ?>
-                                <option value="<?php echo htmlspecialchars($editorial); ?>" <?php echo (isset($filtros['editorial']) && $filtros['editorial'] == $editorial) ? 'selected' : ''; ?>>
+                            <?php foreach ($editoriales as $editorial): ?>
+                                <option value="<?php echo htmlspecialchars($editorial); ?>" <?php echo (isset($_GET['editorial']) && $_GET['editorial'] == $editorial) ? 'selected' : ''; ?>>
                                     <?php echo htmlspecialchars($editorial); ?>
                                 </option>
                             <?php endforeach; ?>
@@ -124,8 +126,8 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                     </div>
 
                     <div class="filter-group">
-                        <label for="precio_max">Precio máximo: <span id="precio-value"><?php echo $filtroPrecioMax; ?>€</span></label>
-                        <input type="range" name="precio_max" id="precio_max" min="0" max="<?php echo $precioMaximo; ?>" step="5" value="<?php echo $filtroPrecioMax; ?>" class="filter-control range-slider">
+                        <label for="precio_max">Precio máximo:</label>
+                        <input type="number" name="precio_max" id="precio_max" min="0" step="1" value="<?php echo isset($_GET['precio_max']) ? htmlspecialchars($_GET['precio_max']) : $precioMaximo; ?>">
                     </div>
 
                     <div class="filter-buttons">
@@ -142,12 +144,12 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
 
             <!-- Productos - ESTRUCTURA IGUAL A VIDEOJUEGOS Y CONSOLAS -->
             <div class="products-container">
-                <?php if (empty($revistas)) : ?>
+                <?php if (empty($revistas)): ?>
                     <div class="no-results">
                         <p>No se encontraron revistas con los filtros seleccionados.</p>
                     </div>
-                <?php else : ?>
-                    <?php foreach ($revistas as $revista) : ?>
+                <?php else: ?>
+                    <?php foreach ($revistas as $revista): ?>
                         <div class="product-card">
                             <div class="product-img" style="background-image: url('<?php echo htmlspecialchars($revista['imagen']); ?>');"></div>
                             <div class="product-platform"><?php echo htmlspecialchars($revista['editorial']); ?></div>
@@ -222,24 +224,15 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
     </footer>
 
     <script>
-        // JavaScript para actualizar el valor del slider de precio
         document.addEventListener('DOMContentLoaded', function() {
             const precioSlider = document.getElementById('precio_max');
             const precioValue = document.getElementById('precio-value');
 
-            precioSlider.addEventListener('input', function() {
-                precioValue.textContent = this.value + '€';
-            });
-
-            // Actualizar filtros al cambiar los selectores
-            const filterForm = document.getElementById('filter-form');
-            const selects = filterForm.querySelectorAll('select');
-
-            selects.forEach(select => {
-                select.addEventListener('change', function() {
-                    filterForm.submit();
+            if (precioSlider && precioValue) {
+                precioSlider.addEventListener('input', function() {
+                    precioValue.textContent = this.value + '€';
                 });
-            });
+            }
 
             // JavaScript para el menú desplegable del usuario
             const userBtn = document.querySelector('.user-btn');
@@ -259,6 +252,69 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                     }
                 });
             }
+
+            // Manejar los botones de añadir al carrito
+            document.querySelectorAll('.btn-add-cart').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+
+                    // Obtener información del producto
+                    const productId = this.getAttribute('data-id');
+                    const productType = this.getAttribute('data-tipo') || 'revista';
+                    const productName = this.getAttribute('data-nombre');
+
+                    // Hacer una petición AJAX para añadir al carrito
+                    fetch(`ajax_add_to_cart.php?action=add&tipo=${productType}&id=${productId}`)
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Error de red al añadir al carrito');
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                // Mostrar notificación de éxito
+                                showToast(`${productName} se ha añadido correctamente a tu carrito`, false);
+                                // Actualizar contador del carrito
+                                if (data.cartCount) {
+                                    updateCartBadge(data.cartCount);
+                                } else {
+                                    updateCartCounter();
+                                }
+                            } else {
+                                // Mostrar notificación de error
+                                showToast(data.message || 'Error al añadir el producto al carrito', true);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            showToast('Error al añadir el producto al carrito', true);
+                        });
+                });
+            });
+
+            // Función para actualizar el contador del carrito
+            function updateCartCounter() {
+                fetch('get_cart_count.php')
+                    .then(response => response.json())
+                    .then data => {
+                        updateCartBadge(data.count);
+                    })
+            .catch(error => {
+                console.error('Error al actualizar contador:', error);
+            });
+        }
+
+        // Función para actualizar el badge del carrito
+        function updateCartBadge(count) {
+            const badges = document.querySelectorAll('.cart-badge');
+            if (badges.length > 0) {
+                badges.forEach(badge => {
+                    badge.textContent = count;
+                    badge.style.display = count > 0 ? 'inline-block' : 'none';
+                });
+            }
+        }
         });
 
         // Función para mostrar la notificación toast

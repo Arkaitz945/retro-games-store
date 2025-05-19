@@ -47,6 +47,7 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consolas Retro - RetroGames Store</title>
     <link rel="stylesheet" href="css/home.css">
+    <link rel="stylesheet" href="css/productos.css">
     <link rel="stylesheet" href="css/consolas.css">
     <link rel="stylesheet" href="css/notification.css">
     <link rel="stylesheet" href="css/sticky-footer.css">
@@ -111,39 +112,38 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                 <p>Encuentra las consolas más emblemáticas de la historia de los videojuegos</p>
             </div>
 
-            <!-- Sección de filtros (como en videojuegos) -->
+            <!-- Filtros exactamente como en la captura -->
+            <!-- Filtros -->
             <div class="filters-container">
                 <h3>Filtrar por:</h3>
-                <form action="" method="get" id="filter-form">
-                    <div class="filters-container">
-                        <div class="filter-group">
-                            <label for="fabricante">Fabricante:</label>
-                            <select name="fabricante" id="fabricante" class="filter-control">
-                                <option value="">Todos los fabricantes</option>
-                                <?php foreach ($fabricantes as $fabricante) : ?>
-                                    <option value="<?php echo htmlspecialchars($fabricante); ?>" <?php echo (isset($filtros['fabricante']) && $filtros['fabricante'] == $fabricante) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($fabricante); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
+                <form action="consolas.php" method="GET" class="filters-form">
+                    <div class="filter-group">
+                        <label for="fabricante">Fabricante:</label>
+                        <select name="fabricante" id="fabricante">
+                            <option value="">Todos los fabricantes</option>
+                            <?php foreach ($fabricantes as $fabricante): ?>
+                                <option value="<?php echo htmlspecialchars($fabricante); ?>" <?php echo (isset($_GET['fabricante']) && $_GET['fabricante'] == $fabricante) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($fabricante); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
-                        <div class="filter-group">
-                            <label for="estado">Estado:</label>
-                            <select name="estado" id="estado" class="filter-control">
-                                <option value="">Todos los estados</option>
-                                <?php foreach ($estados as $estado) : ?>
-                                    <option value="<?php echo htmlspecialchars($estado); ?>" <?php echo (isset($filtros['estado']) && $filtros['estado'] == $estado) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($estado); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
+                    <div class="filter-group">
+                        <label for="estado">Estado:</label>
+                        <select name="estado" id="estado">
+                            <option value="">Todos los estados</option>
+                            <?php foreach ($estados as $estado): ?>
+                                <option value="<?php echo htmlspecialchars($estado); ?>" <?php echo (isset($_GET['estado']) && $_GET['estado'] == $estado) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($estado); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
-                        <div class="filter-group">
-                            <label for="precio_max">Precio máximo: <span id="precio-value"><?php echo $filtroPrecioMax; ?>€</span></label>
-                            <input type="range" name="precio_max" id="precio_max" min="0" max="<?php echo $precioMaximo; ?>" step="10" value="<?php echo $filtroPrecioMax; ?>" class="filter-control range-slider">
-                        </div>
+                    <div class="filter-group">
+                        <label for="precio_max">Precio máximo:</label>
+                        <input type="number" name="precio_max" id="precio_max" min="0" step="1" value="<?php echo isset($_GET['precio_max']) ? htmlspecialchars($_GET['precio_max']) : ''; ?>">
                     </div>
 
                     <div class="filter-buttons">
