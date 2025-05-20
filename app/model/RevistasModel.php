@@ -16,10 +16,30 @@ class RevistasModel
     /**
      * Obtiene todas las revistas
      */
-    public function getAllRevistas()
+    public function getAllRevistas($filtros = [])
     {
-        $query = "SELECT * FROM revistas ORDER BY titulo ASC";
+        $query = "SELECT * FROM revistas WHERE 1=1";
+        $params = [];
+
+        // Aplicar filtros si existen
+        if (!empty($filtros['editorial'])) {
+            $query .= " AND editorial = :editorial";
+            $params[':editorial'] = $filtros['editorial'];
+        }
+
+        if (!empty($filtros['precio_max']) && is_numeric($filtros['precio_max'])) {
+            $query .= " AND precio <= :precio_max";
+            $params[':precio_max'] = $filtros['precio_max'];
+        }
+
+        $query .= " ORDER BY titulo ASC";
         $stmt = $this->conn->prepare($query);
+
+        // Bind parameters
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+
         $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -122,5 +142,24 @@ class RevistasModel
 
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
         return array_column($result, 'editorial');
+    }
+
+    /**
+     * Obtiene revistas relacionadas por editorial
+     */
+    public function getRevistasRelacionadas($idRevista, $editorial, $limit = 4)
+    {
+        $query = "SELECT * FROM revistas 
+                 WHERE ID_Revista != :id AND editorial = :editorial 
+                 ORDER BY RAND() 
+                 LIMIT :limit";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $idRevista, PDO::PARAM_INT);
+        $stmt->bindParam(':editorial', $editorial);
+        $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

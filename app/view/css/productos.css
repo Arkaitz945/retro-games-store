@@ -200,6 +200,10 @@
   transition: all 0.3s ease;
   margin-bottom: 8px; /* Espacio entre botones */
   width: 100%; /* Ancho completo */
+  height: 38px; /* Fixed height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-secondary {
@@ -209,6 +213,8 @@
 
 .btn-secondary:hover {
   background-color: #3d366a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .btn-add-cart {
@@ -221,6 +227,8 @@
 
 .btn-add-cart:hover {
   background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .btn-add-cart i {

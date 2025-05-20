@@ -21,6 +21,11 @@ class UsuariosAdminController
         // Depuración
         error_log("UsuariosAdminController: Se obtuvieron " . count($usuarios) . " usuarios");
 
+        // Verificar la estructura de los datos devueltos
+        if (!empty($usuarios)) {
+            error_log("Estructura del primer usuario: " . print_r($usuarios[0], true));
+        }
+
         return $usuarios;
     }
 

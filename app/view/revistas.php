@@ -44,10 +44,9 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
     <title>Revistas - RetroGames Store</title>
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/productos.css">
-    <link rel="stylesheet" href="css/revistas.css">
-    <link rel="stylesheet" href="css/notification.css">
-    <link rel="stylesheet" href="css/sticky-footer.css">
+    <link rel="stylesheet" href="css/videojuegos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/notification.css">
 </head>
 
 <body>
@@ -111,7 +110,6 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
             <!-- Filtros -->
             <div class="filters-container">
                 <h3>Filtrar por:</h3>
-                <br>
                 <form action="revistas.php" method="GET" class="filters-form">
                     <div class="filter-group">
                         <label for="editorial">Editorial:</label>
@@ -142,8 +140,8 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                 <p>Se encontraron <?php echo count($revistas); ?> revistas</p>
             </div>
 
-            <!-- Productos - ESTRUCTURA IGUAL A VIDEOJUEGOS Y CONSOLAS -->
-            <div class="products-container">
+            <!-- Productos - Usando la misma estructura de videojuegos.php -->
+            <div class="products-grid">
                 <?php if (empty($revistas)): ?>
                     <div class="no-results">
                         <p>No se encontraron revistas con los filtros seleccionados.</p>
@@ -155,7 +153,7 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                             <div class="product-platform"><?php echo htmlspecialchars($revista['editorial']); ?></div>
                             <h3><?php echo htmlspecialchars($revista['titulo']); ?></h3>
                             <div class="product-details">
-                                <span class="product-condition">Revista</span>
+                                <span class="product-genre">Revista</span>
                                 <span class="product-year"><?php echo date('Y', strtotime($revista['fecha_publicacion'])); ?></span>
                             </div>
                             <p class="price"><?php echo number_format($revista['precio'], 2); ?>€</p>
@@ -225,15 +223,6 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const precioSlider = document.getElementById('precio_max');
-            const precioValue = document.getElementById('precio-value');
-
-            if (precioSlider && precioValue) {
-                precioSlider.addEventListener('input', function() {
-                    precioValue.textContent = this.value + '€';
-                });
-            }
-
             // JavaScript para el menú desplegable del usuario
             const userBtn = document.querySelector('.user-btn');
             const dropdownContent = document.querySelector('.dropdown-content');
@@ -297,24 +286,24 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
             function updateCartCounter() {
                 fetch('get_cart_count.php')
                     .then(response => response.json())
-                    .then data => {
+                    .then(data => {
                         updateCartBadge(data.count);
                     })
-            .catch(error => {
-                console.error('Error al actualizar contador:', error);
-            });
-        }
-
-        // Función para actualizar el badge del carrito
-        function updateCartBadge(count) {
-            const badges = document.querySelectorAll('.cart-badge');
-            if (badges.length > 0) {
-                badges.forEach(badge => {
-                    badge.textContent = count;
-                    badge.style.display = count > 0 ? 'inline-block' : 'none';
-                });
+                    .catch(error => {
+                        console.error('Error al actualizar contador:', error);
+                    });
             }
-        }
+
+            // Función para actualizar el badge del carrito
+            function updateCartBadge(count) {
+                const badges = document.querySelectorAll('.cart-badge');
+                if (badges.length > 0) {
+                    badges.forEach(badge => {
+                        badge.textContent = count;
+                        badge.style.display = count > 0 ? 'inline-block' : 'none';
+                    });
+                }
+            }
         });
 
         // Función para mostrar la notificación toast

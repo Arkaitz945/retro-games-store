@@ -12,8 +12,20 @@ if (!isset($_SESSION['usuario']) || !isset($_SESSION['admin']) || $_SESSION['adm
 
 require_once "../../controller/admin/UsuariosAdminController.php";
 
+// Verificar si el archivo del modelo existe
+$modeloPath = "../../model/UsuariosModel.php";
+if (file_exists($modeloPath)) {
+    error_log("Vista Usuarios: El archivo del modelo existe en: " . realpath($modeloPath));
+} else {
+    error_log("Vista Usuarios: ¡ERROR! El archivo del modelo NO existe en: " . realpath(dirname($modeloPath)) . "/" . basename($modeloPath));
+}
+
 $usuariosController = new UsuariosAdminController();
 $usuarios = $usuariosController->getAllUsuarios();
+
+// Depuración mejorada
+error_log("Vista Usuarios: Tipo de datos recibidos: " . gettype($usuarios));
+error_log("Vista Usuarios: Datos de usuarios recibidos en la vista: " . print_r($usuarios, true));
 
 $nombreUsuario = $_SESSION['usuario'];
 $mensaje = '';
@@ -93,6 +105,13 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
             <?php endif; ?>
 
             <div class="admin-content">
+                <!-- Añadir mensaje de depuración visible -->
+                <?php if (empty($usuarios)): ?>
+                    <div class="alert alert-warning">
+                        No se encontraron usuarios en la base de datos. Verifica los registros de error para más información.
+                    </div>
+                <?php endif; ?>
+
                 <div class="search-filter">
                     <input type="text" id="search-input" placeholder="Buscar por nombre o email...">
                     <select id="role-filter">
@@ -108,8 +127,6 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                             <th>ID</th>
                             <th>Nombre</th>
                             <th>Email</th>
-                            <th>Teléfono</th>
-                            <th>Fecha Registro</th>
                             <th>Rol</th>
                             <th>Acciones</th>
                         </tr>
@@ -117,31 +134,31 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                     <tbody>
                         <?php if (empty($usuarios)): ?>
                             <tr>
-                                <td colspan="7" class="no-results">No hay usuarios disponibles</td>
+                                <td colspan="5" class="no-results">No hay usuarios disponibles</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($usuarios as $usuario): ?>
-                                <tr data-nombre="<?php echo strtolower(htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellidos'])); ?>"
-                                    data-email="<?php echo strtolower(htmlspecialchars($usuario['email'])); ?>"
-                                    data-rol="<?php echo $usuario['admin']; ?>">
-                                    <td><?php echo $usuario['id']; ?></td>
-                                    <td><?php echo htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellidos']); ?></td>
-                                    <td><?php echo htmlspecialchars($usuario['email']); ?></td>
-                                    <td><?php echo htmlspecialchars($usuario['telefono'] ?: 'N/A'); ?></td>
-                                    <td><?php echo date('d/m/Y', strtotime($usuario['fecha_registro'])); ?></td>
+                                <tr data-nombre="<?php echo strtolower(htmlspecialchars($usuario['nombre'] . ' ' . ($usuario['apellidos'] ?? ''))); ?>"
+                                    data-email="<?php echo strtolower(htmlspecialchars($usuario['correo'] ?? $usuario['email'] ?? '')); ?>"
+                                    data-rol="<?php echo $usuario['esAdmin'] ?? $usuario['admin'] ?? 0; ?>">
+                                    <td><?php echo $usuario['ID_U'] ?? $usuario['id'] ?? ''; ?></td>
+                                    <td><?php echo htmlspecialchars($usuario['nombre'] . ' ' . ($usuario['apellidos'] ?? '')); ?></td>
+                                    <td><?php echo htmlspecialchars($usuario['correo'] ?? $usuario['email'] ?? ''); ?></td>
                                     <td>
-                                        <?php if ($usuario['admin'] == 1): ?>
+                                        <?php if (($usuario['esAdmin'] ?? $usuario['admin'] ?? 0) == 1): ?>
                                             <span class="badge admin-badge">Administrador</span>
                                         <?php else: ?>
                                             <span class="badge user-badge">Usuario</span>
                                         <?php endif; ?>
                                     </td>
                                     <td class="actions">
-                                        <a href="usuario_form.php?id=<?php echo $usuario['id']; ?>" class="btn-edit" title="Editar">
+                                        <a href="usuario_form.php?id=<?php echo $usuario['ID_U'] ?? $usuario['id'] ?? ''; ?>" class="btn-edit" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <?php if ($_SESSION['id'] != $usuario['id']): ?>
-                                            <button type="button" class="btn-delete" title="Eliminar" data-id="<?php echo $usuario['id']; ?>" data-nombre="<?php echo htmlspecialchars($usuario['nombre'] . ' ' . $usuario['apellidos']); ?>">
+                                        <?php if ($_SESSION['id'] != ($usuario['ID_U'] ?? $usuario['id'] ?? '')): ?>
+                                            <button type="button" class="btn-delete" title="Eliminar"
+                                                data-id="<?php echo $usuario['ID_U'] ?? $usuario['id'] ?? ''; ?>"
+                                                data-nombre="<?php echo htmlspecialchars($usuario['nombre'] . ' ' . ($usuario['apellidos'] ?? '')); ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         <?php endif; ?>

@@ -48,10 +48,9 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
     <title>Consolas Retro - RetroGames Store</title>
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/productos.css">
-    <link rel="stylesheet" href="css/consolas.css">
-    <link rel="stylesheet" href="css/notification.css">
-    <link rel="stylesheet" href="css/sticky-footer.css">
+    <link rel="stylesheet" href="css/videojuegos.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/notification.css">
 </head>
 
 <body>
@@ -112,7 +111,6 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                 <p>Encuentra las consolas más emblemáticas de la historia de los videojuegos</p>
             </div>
 
-            <!-- Filtros exactamente como en la captura -->
             <!-- Filtros -->
             <div class="filters-container">
                 <h3>Filtrar por:</h3>
@@ -158,8 +156,8 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                 <p>Se encontraron <?php echo count($consolas); ?> consolas</p>
             </div>
 
-            <!-- Productos - ESTRUCTURA EXACTAMENTE IGUAL A VIDEOJUEGOS -->
-            <div class="products-container">
+            <!-- Productos - Usando la misma estructura de videojuegos.php -->
+            <div class="products-grid">
                 <?php if (empty($consolas)) : ?>
                     <div class="no-results">
                         <p>No se encontraron consolas con los filtros seleccionados.</p>
@@ -241,48 +239,6 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // JavaScript para el menú desplegable del usuario - NUEVO
-            const userBtn = document.querySelector('.user-btn');
-            const dropdownContent = document.querySelector('.dropdown-content');
-
-            if (userBtn && dropdownContent) {
-                userBtn.addEventListener('click', function(e) {
-                    e.preventDefault(); // Agregar esto para prevenir comportamiento por defecto
-                    dropdownContent.classList.toggle('show');
-                });
-
-                // Cerrar el menú si el usuario hace clic afuera
-                window.addEventListener('click', function(event) {
-                    if (!event.target.matches('.user-btn') && !event.target.closest('.user-btn')) {
-                        if (dropdownContent.classList.contains('show')) {
-                            dropdownContent.classList.remove('show');
-                        }
-                    }
-                });
-            }
-
-            // JavaScript para actualizar el valor del slider de precio
-            const precioSlider = document.getElementById('precio_max');
-            const precioValue = document.getElementById('precio-value');
-
-            if (precioSlider && precioValue) {
-                precioSlider.addEventListener('input', function() {
-                    precioValue.textContent = this.value + '€';
-                });
-            }
-
-            // Actualizar filtros al cambiar los selectores
-            const filterForm = document.getElementById('filter-form');
-            if (filterForm) {
-                const selects = filterForm.querySelectorAll('select');
-
-                selects.forEach(select => {
-                    select.addEventListener('change', function() {
-                        filterForm.submit();
-                    });
-                });
-            }
-
             // JavaScript para el menú desplegable del usuario
             const userBtn = document.querySelector('.user-btn');
             const dropdownContent = document.querySelector('.dropdown-content');
@@ -301,15 +257,6 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                     }
                 });
             }
-
-            // Funcionalidad para botones de añadir
-            const addButtons = document.querySelectorAll('.btn-add');
-            addButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    alert('Producto añadido al carrito');
-                    // Aquí se puede añadir la lógica para añadir al carrito
-                });
-            });
 
             // Manejar los botones de añadir al carrito
             document.querySelectorAll('.btn-add-cart').forEach(button => {
@@ -355,24 +302,24 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
             function updateCartCounter() {
                 fetch('get_cart_count.php')
                     .then(response => response.json())
-                    .then data => {
+                    .then(data => {
                         updateCartBadge(data.count);
                     })
-            .catch(error => {
-                console.error('Error al actualizar contador:', error);
-            });
-        }
-
-        // Función para actualizar el badge del carrito
-        function updateCartBadge(count) {
-            const badges = document.querySelectorAll('.cart-badge');
-            if (badges.length > 0) {
-                badges.forEach(badge => {
-                    badge.textContent = count;
-                    badge.style.display = count > 0 ? 'inline-block' : 'none';
-                });
+                    .catch(error => {
+                        console.error('Error al actualizar contador:', error);
+                    });
             }
-        }
+
+            // Función para actualizar el badge del carrito
+            function updateCartBadge(count) {
+                const badges = document.querySelectorAll('.cart-badge');
+                if (badges.length > 0) {
+                    badges.forEach(badge => {
+                        badge.textContent = count;
+                        badge.style.display = count > 0 ? 'inline-block' : 'none';
+                    });
+                }
+            }
         });
 
         // Función para mostrar la notificación toast

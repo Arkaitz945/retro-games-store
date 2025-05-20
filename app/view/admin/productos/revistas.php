@@ -115,7 +115,6 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Imagen</th>
                             <th>Título</th>
                             <th>Editorial</th>
                             <th>Fecha Publicación</th>
@@ -127,16 +126,13 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                     <tbody>
                         <?php if (empty($revistas)): ?>
                             <tr>
-                                <td colspan="8" class="no-results">No hay revistas disponibles</td>
+                                <td colspan="7" class="no-results">No hay revistas disponibles</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($revistas as $revista): ?>
                                 <tr data-titulo="<?php echo strtolower(htmlspecialchars($revista['titulo'])); ?>"
                                     data-editorial="<?php echo htmlspecialchars($revista['editorial']); ?>">
                                     <td><?php echo $revista['ID_Revista']; ?></td>
-                                    <td class="product-image">
-                                        <img src="../../<?php echo htmlspecialchars($revista['imagen']); ?>" alt="<?php echo htmlspecialchars($revista['titulo']); ?>">
-                                    </td>
                                     <td><?php echo htmlspecialchars($revista['titulo']); ?></td>
                                     <td><?php echo htmlspecialchars($revista['editorial']); ?></td>
                                     <td><?php echo date('d/m/Y', strtotime($revista['fecha_publicacion'])); ?></td>

@@ -19,7 +19,7 @@ class UsuariosModel
         try {
             // Consulta SQL para obtener todos los usuarios - usar la tabla real de tu base de datos
             // Depuración para mostrar la consulta en el log
-            $query = "SELECT * FROM usuario ORDER BY id";
+            $query = "SELECT ID_U, nombre, apellidos, correo, esAdmin FROM usuarios";
             error_log("Consulta SQL: " . $query);
 
             $stmt = $this->conn->prepare($query);
@@ -27,6 +27,11 @@ class UsuariosModel
 
             $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
             error_log("Usuarios encontrados: " . count($usuarios));
+            if (!empty($usuarios)) {
+                error_log("Primer usuario: " . print_r($usuarios[0], true));
+            } else {
+                error_log("No se encontraron usuarios en la base de datos");
+            }
 
             return $usuarios;
         } catch (PDOException $e) {
@@ -44,17 +49,19 @@ class UsuariosModel
     public function getUsuarioById($idUsuario)
     {
         try {
-            // Using the correct column name from your database (ID_U)
-            $query = "SELECT * FROM usuarios WHERE ID_U = :idUsuario";
+            $query = "SELECT ID_U, nombre, apellidos, correo, esAdmin FROM usuarios WHERE ID_U = :idUsuario";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(":idUsuario", $idUsuario, PDO::PARAM_INT);
             $stmt->execute();
 
-            if ($stmt->rowCount() > 0) {
-                return $stmt->fetch(PDO::FETCH_ASSOC);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($usuario) {
+                error_log("Usuario encontrado: " . print_r($usuario, true));
+            } else {
+                error_log("No se encontró usuario con ID " . $idUsuario);
             }
 
-            return false;
+            return $usuario ?: false;
         } catch (PDOException $e) {
             error_log("Error obteniendo usuario por ID: " . $e->getMessage());
             return false;
@@ -74,23 +81,22 @@ class UsuariosModel
             $query = "UPDATE usuarios SET 
                       nombre = :nombre, 
                       apellidos = :apellidos, 
-                      email = :email, 
-                      direccion = :direccion, 
-                      telefono = :telefono, 
-                      admin = :admin
-                      WHERE id = :idUsuario";
+                      correo = :email, 
+                      esAdmin = :admin
+                      WHERE ID_U = :idUsuario";
 
             $stmt = $this->conn->prepare($query);
 
             $stmt->bindParam(":nombre", $usuario['nombre']);
             $stmt->bindParam(":apellidos", $usuario['apellidos']);
             $stmt->bindParam(":email", $usuario['email']);
-            $stmt->bindParam(":direccion", $usuario['direccion']);
-            $stmt->bindParam(":telefono", $usuario['telefono']);
             $stmt->bindParam(":admin", $usuario['admin'], PDO::PARAM_INT);
             $stmt->bindParam(":idUsuario", $idUsuario, PDO::PARAM_INT);
 
-            return $stmt->execute();
+            $result = $stmt->execute();
+            error_log("Actualización de usuario ID $idUsuario: " . ($result ? 'éxito' : 'error'));
+
+            return $result;
         } catch (PDOException $e) {
             error_log("Error actualizando usuario: " . $e->getMessage());
             return false;
@@ -106,66 +112,16 @@ class UsuariosModel
     public function deleteUsuario($idUsuario)
     {
         try {
-            $query = "DELETE FROM usuarios WHERE id = :idUsuario";
+            $query = "DELETE FROM usuarios WHERE ID_U = :idUsuario";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(":idUsuario", $idUsuario, PDO::PARAM_INT);
-            return $stmt->execute();
+            $result = $stmt->execute();
+            error_log("Eliminación de usuario ID $idUsuario: " . ($result ? 'éxito' : 'error'));
+
+            return $result;
         } catch (PDOException $e) {
             error_log("Error eliminando usuario: " . $e->getMessage());
             return false;
-        }
-    }
-
-    /**
-     * Contar el número total de usuarios
-     * 
-     * @return int Número total de usuarios
-     */
-    public function countUsuarios()
-    {
-        try {
-            $query = "SELECT COUNT(*) as total FROM usuarios";
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute();
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            return $result['total'];
-        } catch (PDOException $e) {
-            error_log("Error contando usuarios: " . $e->getMessage());
-            return 0;
-        }
-    }
-
-    /**
-     * Obtener datos para estadísticas de usuarios
-     * 
-     * @param string $periodo Periodo de tiempo (mes, anio)
-     * @return array Datos de estadísticas
-     */
-    public function getUsuariosEstadisticas($periodo = 'mes')
-    {
-        try {
-            if ($periodo === 'mes') {
-                $query = "SELECT DATE_FORMAT(fecha_registro, '%Y-%m-%d') as fecha, 
-                          COUNT(*) as total 
-                          FROM usuarios 
-                          WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) 
-                          GROUP BY DATE_FORMAT(fecha_registro, '%Y-%m-%d') 
-                          ORDER BY fecha";
-            } else {
-                $query = "SELECT DATE_FORMAT(fecha_registro, '%Y-%m') as fecha, 
-                          COUNT(*) as total 
-                          FROM usuarios 
-                          WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) 
-                          GROUP BY DATE_FORMAT(fecha_registro, '%Y-%m') 
-                          ORDER BY fecha";
-            }
-
-            $stmt = $this->conn->prepare($query);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log("Error obteniendo estadísticas de usuarios: " . $e->getMessage());
-            return [];
         }
     }
 
@@ -178,12 +134,15 @@ class UsuariosModel
     public function emailExiste($email)
     {
         try {
-            $query = "SELECT ID_U FROM usuarios WHERE correo = :email";
+            $query = "SELECT COUNT(*) FROM usuarios WHERE correo = :email";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":email", $email);
+            $stmt->bindParam(':email', $email);
             $stmt->execute();
 
-            return $stmt->rowCount() > 0;
+            $existe = $stmt->fetchColumn() > 0;
+            error_log("Verificación de email $email: " . ($existe ? 'existe' : 'no existe'));
+
+            return $existe;
         } catch (PDOException $e) {
             error_log("Error al verificar si el email existe: " . $e->getMessage());
             return false;
@@ -205,7 +164,7 @@ class UsuariosModel
             // Aplicar hash a la contraseña
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 
-            $query = "INSERT INTO usuarios (nombre, apellidos, correo, contraseña, admin) 
+            $query = "INSERT INTO usuarios (nombre, apellidos, correo, contraseña, esAdmin) 
                       VALUES (:nombre, :apellidos, :email, :password, 0)";
 
             $stmt = $this->conn->prepare($query);

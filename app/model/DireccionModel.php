@@ -1,6 +1,6 @@
 <?php
 
-require_once "../../config/dbConnection.php";
+require_once __DIR__ . "/../config/database.php";
 
 class DireccionModel
 {
@@ -8,63 +8,87 @@ class DireccionModel
 
     public function __construct()
     {
-        $this->conn = getDBConnection();
+        $database = new Database();
+        $this->conn = $database->getConnection();
 
+        // Verificar si la conexión se estableció correctamente
         if (!$this->conn) {
-            die("Error: No se pudo conectar a la base de datos");
+            error_log("DireccionModel: Error al conectar a la base de datos. La conexión es nula.");
         }
     }
 
     /**
-     * Obtener las direcciones de un usuario
+     * Obtiene la dirección de un usuario
      * 
      * @param int $idUsuario ID del usuario
-     * @return array Array con las direcciones
+     * @return array|null Datos de la dirección o null si no existe
+     */
+    public function getDireccionByUsuario($idUsuario)
+    {
+        try {
+            // Verificar si hay conexión antes de continuar
+            if (!$this->conn) {
+                error_log("DireccionModel: No se puede obtener dirección - La conexión a la base de datos es nula");
+                return null;
+            }
+
+            // Verificar si la tabla existe antes de la consulta
+            $tableExistsQuery = "SHOW TABLES LIKE 'direccion'";
+            $tableExistsStmt = $this->conn->prepare($tableExistsQuery);
+            $tableExistsStmt->execute();
+
+            if ($tableExistsStmt->rowCount() == 0) {
+                error_log("DireccionModel: La tabla 'direccion' no existe en la base de datos");
+                return null;
+            }
+
+            $query = "SELECT * FROM direccion WHERE idUsuario = :idUsuario LIMIT 1";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':idUsuario', $idUsuario);
+            $stmt->execute();
+
+            $direccion = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            // Registrar si se encontró dirección o no
+            if ($direccion) {
+                error_log("DireccionModel: Dirección encontrada para el usuario ID: " . $idUsuario);
+            } else {
+                error_log("DireccionModel: No se encontró dirección para el usuario ID: " . $idUsuario);
+            }
+
+            return $direccion ?: null;
+        } catch (PDOException $e) {
+            error_log("DireccionModel: Error al obtener dirección - " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Obtiene todas las direcciones de un usuario
+     * 
+     * @param int $idUsuario ID del usuario
+     * @return array Lista de direcciones
      */
     public function getDireccionesByUsuario($idUsuario)
     {
         try {
-            $query = "SELECT * FROM direccion WHERE idUsuario = :idUsuario ORDER BY ID_Direccion DESC";
+            $query = "SELECT * FROM direccion WHERE idUsuario = :idUsuario";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":idUsuario", $idUsuario, PDO::PARAM_INT);
+            $stmt->bindParam(':idUsuario', $idUsuario);
             $stmt->execute();
 
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log("Error obteniendo direcciones: " . $e->getMessage());
+            error_log("DireccionModel: Error al obtener direcciones - " . $e->getMessage());
             return [];
         }
     }
 
     /**
-     * Obtener una dirección por su ID
-     * 
-     * @param int $idDireccion ID de la dirección
-     * @return mixed Array con la dirección o false si no existe
-     */
-    public function getDireccionById($idDireccion)
-    {
-        try {
-            $query = "SELECT * FROM direccion WHERE ID_Direccion = :idDireccion";
-            $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":idDireccion", $idDireccion, PDO::PARAM_INT);
-            $stmt->execute();
-
-            if ($stmt->rowCount() > 0) {
-                return $stmt->fetch(PDO::FETCH_ASSOC);
-            }
-            return false;
-        } catch (PDOException $e) {
-            error_log("Error obteniendo dirección: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Crear una nueva dirección
+     * Crea una nueva dirección
      * 
      * @param array $direccion Datos de la dirección
-     * @return int|bool ID de la dirección creada o false si falla
+     * @return bool|int ID de la dirección creada o false en caso de error
      */
     public function createDireccion($direccion)
     {
@@ -73,72 +97,68 @@ class DireccionModel
                       VALUES (:calle, :numero, :codigoPostal, :idUsuario)";
 
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":calle", $direccion['calle']);
-            $stmt->bindParam(":numero", $direccion['numero']);
-            $stmt->bindParam(":codigoPostal", $direccion['codigoPostal']);
-            $stmt->bindParam(":idUsuario", $direccion['idUsuario'], PDO::PARAM_INT);
+            $stmt->bindParam(':calle', $direccion['calle']);
+            $stmt->bindParam(':numero', $direccion['numero']);
+            $stmt->bindParam(':codigoPostal', $direccion['codigoPostal']);
+            $stmt->bindParam(':idUsuario', $direccion['idUsuario']);
 
             if ($stmt->execute()) {
                 return $this->conn->lastInsertId();
             }
             return false;
         } catch (PDOException $e) {
-            error_log("Error creando dirección: " . $e->getMessage());
+            error_log("DireccionModel: Error al crear dirección - " . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Actualizar una dirección existente
+     * Actualiza una dirección existente
      * 
+     * @param int $idDireccion ID de la dirección
      * @param array $direccion Datos de la dirección
-     * @return bool True si se actualizó, false si falla
+     * @return bool Resultado de la operación
      */
-    public function updateDireccion($direccion)
+    public function updateDireccion($idDireccion, $direccion)
     {
         try {
             $query = "UPDATE direccion 
-                      SET calle = :calle, 
-                          numero = :numero, 
-                          codigoPostal = :codigoPostal 
-                      WHERE ID_Direccion = :idDireccion 
-                        AND idUsuario = :idUsuario";
+                      SET calle = :calle, numero = :numero, codigoPostal = :codigoPostal
+                      WHERE ID_Direccion = :id";
 
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":calle", $direccion['calle']);
-            $stmt->bindParam(":numero", $direccion['numero']);
-            $stmt->bindParam(":codigoPostal", $direccion['codigoPostal']);
-            $stmt->bindParam(":idDireccion", $direccion['ID_Direccion'], PDO::PARAM_INT);
-            $stmt->bindParam(":idUsuario", $direccion['idUsuario'], PDO::PARAM_INT);
+            $stmt->bindParam(':calle', $direccion['calle']);
+            $stmt->bindParam(':numero', $direccion['numero']);
+            $stmt->bindParam(':codigoPostal', $direccion['codigoPostal']);
+            $stmt->bindParam(':id', $idDireccion);
 
             return $stmt->execute();
         } catch (PDOException $e) {
-            error_log("Error actualizando dirección: " . $e->getMessage());
+            error_log("DireccionModel: Error al actualizar dirección - " . $e->getMessage());
             return false;
         }
     }
 
     /**
-     * Eliminar una dirección
+     * Elimina una dirección
      * 
      * @param int $idDireccion ID de la dirección
-     * @param int $idUsuario ID del usuario (para seguridad)
-     * @return bool True si se eliminó, false si falla
+     * @param int $idUsuario ID del usuario (para verificación de seguridad)
+     * @return bool Resultado de la operación
      */
     public function deleteDireccion($idDireccion, $idUsuario)
     {
         try {
             $query = "DELETE FROM direccion 
-                      WHERE ID_Direccion = :idDireccion 
-                        AND idUsuario = :idUsuario";
+                      WHERE ID_Direccion = :id AND idUsuario = :idUsuario";
 
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":idDireccion", $idDireccion, PDO::PARAM_INT);
-            $stmt->bindParam(":idUsuario", $idUsuario, PDO::PARAM_INT);
+            $stmt->bindParam(':id', $idDireccion);
+            $stmt->bindParam(':idUsuario', $idUsuario);
 
             return $stmt->execute();
         } catch (PDOException $e) {
-            error_log("Error eliminando dirección: " . $e->getMessage());
+            error_log("DireccionModel: Error al eliminar dirección - " . $e->getMessage());
             return false;
         }
     }

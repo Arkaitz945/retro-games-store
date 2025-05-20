@@ -2,6 +2,7 @@
 
 require_once "../model/CarritoModel.php";
 require_once "../model/JuegosModel.php";
+require_once "../config/database.php"; // Añadir esta línea para incluir la clase Database
 
 class CarritoController
 {
@@ -231,5 +232,134 @@ class CarritoController
         }
 
         return $total;
+    }
+
+    /**
+     * Establece conexión con la base de datos
+     * @return PDO Objeto de conexión PDO
+     */
+    private function conectarDB()
+    {
+        try {
+            // Parámetros de conexión específicos
+            $host = 'localhost';
+            $dbname = 'retro_games_db'; // Verifica que este nombre es correcto
+            $username = 'root';
+            $password = ''; // Asegúrate de que esta es la contraseña correcta
+
+            // Registrar intento de conexión para depuración
+            error_log("Intentando conectar a la base de datos: $dbname en $host");
+
+            // Crear conexión PDO con opciones extendidas
+            $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8";
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ];
+
+            $db = new PDO($dsn, $username, $password, $options);
+            error_log("Conexión a la base de datos establecida correctamente");
+
+            return $db;
+        } catch (PDOException $e) {
+            // Registrar el error con información detallada
+            error_log("Error detallado de conexión a la BD: " . $e->getMessage());
+            throw new Exception("Error de conexión a la base de datos. Por favor, inténtelo de nuevo más tarde.");
+        }
+    }
+
+    /**
+     * Reduce el stock de los productos en el carrito
+     * @param int $idUsuario ID del usuario
+     * @return array Resultado de la operación
+     */
+    public function reduceStock($idUsuario)
+    {
+        try {
+            $db = $this->conectarDB();
+
+            // Obtener los productos en el carrito
+            $cartItems = $this->getCart($idUsuario);
+
+            if (empty($cartItems)) {
+                return ['success' => false, 'message' => 'No hay productos en el carrito'];
+            }
+
+            // Iniciar transacción
+            $db->beginTransaction();
+
+            foreach ($cartItems as $item) {
+                // Determinar la tabla según el tipo de producto
+                $tabla = '';
+                $idColumn = '';
+                switch ($item['tipo_producto']) {
+                    case 'juego':
+                        $tabla = 'juegos'; // Corregido de 'videojuegos' a 'juegos'
+                        $idColumn = 'ID_J'; // Corregido de 'ID_Videojuego' a 'ID_J'
+                        break;
+                    case 'consola':
+                        $tabla = 'consolas';
+                        $idColumn = 'ID_Consola'; // Verifica si este es el nombre correcto
+                        break;
+                    case 'revista':
+                        $tabla = 'revistas';
+                        $idColumn = 'ID_Revista'; // Verifica si este es el nombre correcto
+                        break;
+                    case 'accesorio':
+                        $tabla = 'accesorios';
+                        $idColumn = 'ID_Accesorio'; // Verifica si este es el nombre correcto
+                        break;
+                    default:
+                        throw new Exception("Tipo de producto desconocido: " . $item['tipo_producto']);
+                }
+
+                // Verificar stock actual
+                $stmt = $db->prepare("SELECT stock FROM $tabla WHERE $idColumn = :id");
+                $stmt->bindParam(':id', $item['ID_Producto'], PDO::PARAM_INT);
+                $stmt->execute();
+                $producto = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                if (!$producto) {
+                    throw new Exception("Producto no encontrado: " . $item['ID_Producto']);
+                }
+
+                $stockActual = $producto['stock'];
+                $cantidadPedida = $item['cantidad'];
+
+                if ($stockActual < $cantidadPedida) {
+                    throw new Exception("Stock insuficiente para el producto " . $item['nombre']);
+                }
+
+                // Actualizar stock
+                $nuevoStock = $stockActual - $cantidadPedida;
+                $stmt = $db->prepare("UPDATE $tabla SET stock = :stock WHERE $idColumn = :id");
+                $stmt->bindParam(':stock', $nuevoStock, PDO::PARAM_INT);
+                $stmt->bindParam(':id', $item['ID_Producto'], PDO::PARAM_INT);
+                $result = $stmt->execute();
+
+                if (!$result) {
+                    throw new Exception("Error al actualizar el stock del producto " . $item['nombre']);
+                }
+
+                // Registrar en log la reducción de stock
+                error_log("Stock reducido para producto ID: " . $item['ID_Producto'] .
+                    ", Tipo: " . $item['tipo_producto'] .
+                    ", Cantidad: " . $cantidadPedida .
+                    ", Nuevo stock: " . $nuevoStock);
+            }
+
+            // Confirmar transacción
+            $db->commit();
+
+            return ['success' => true, 'message' => 'Stock actualizado correctamente'];
+        } catch (Exception $e) {
+            // Revertir transacción en caso de error
+            if (isset($db) && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            error_log("Error en reduceStock: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al actualizar el stock: ' . $e->getMessage()];
+        }
     }
 }

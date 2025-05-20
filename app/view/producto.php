@@ -194,28 +194,6 @@ if (!$juego) {
                     <p><?php echo nl2br(htmlspecialchars($juego['descripcion'])); ?></p>
                 </div>
             </div>
-
-            <div class="suggested-products">
-                <h2>También te puede interesar</h2>
-                <div class="products-grid">
-                    <?php
-                    // Obtener juegos relacionados (misma plataforma o género)
-                    $juegosRelacionados = $juegosController->getJuegosRelacionados($idJuego, $juego['plataforma'], $juego['genero'], 4);
-
-                    foreach ($juegosRelacionados as $juegoRelacionado):
-                    ?>
-                        <div class="product-card">
-                            <div class="product-img" style="background-image: url('<?php echo htmlspecialchars($juegoRelacionado['imagen']); ?>');"></div>
-                            <div class="product-platform"><?php echo htmlspecialchars($juegoRelacionado['plataforma']); ?></div>
-                            <h3><?php echo htmlspecialchars($juegoRelacionado['nombre']); ?></h3>
-                            <p class="price"><?php echo number_format($juegoRelacionado['precio'], 2); ?>€</p>
-                            <div class="product-actions">
-                                <a href="producto.php?id=<?php echo $juegoRelacionado['ID_J']; ?>" class="btn-secondary">Ver Detalles</a>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
         </div>
     </main>
 

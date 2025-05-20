@@ -123,7 +123,6 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Imagen</th>
                             <th>Nombre</th>
                             <th>Fabricante</th>
                             <th>Año</th>
@@ -136,7 +135,7 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                     <tbody>
                         <?php if (empty($consolas)): ?>
                             <tr>
-                                <td colspan="9" class="no-results">No hay consolas disponibles</td>
+                                <td colspan="8" class="no-results">No hay consolas disponibles</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($consolas as $consola): ?>
@@ -144,9 +143,6 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                                     data-fabricante="<?php echo htmlspecialchars($consola['fabricante']); ?>"
                                     data-estado="<?php echo htmlspecialchars($consola['estado']); ?>">
                                     <td><?php echo $consola['ID_Consola']; ?></td>
-                                    <td class="product-image">
-                                        <img src="../../<?php echo htmlspecialchars($consola['imagen']); ?>" alt="<?php echo htmlspecialchars($consola['nombre']); ?>">
-                                    </td>
                                     <td><?php echo htmlspecialchars($consola['nombre']); ?></td>
                                     <td><?php echo htmlspecialchars($consola['fabricante']); ?></td>
                                     <td><?php echo htmlspecialchars($consola['año_lanzamiento']); ?></td>

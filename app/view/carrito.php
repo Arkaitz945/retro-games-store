@@ -251,7 +251,7 @@ $cartTotal = $carritoController->getCartTotal($idUsuario);
                                 <div class="totals-label">Total:</div>
                                 <div class="totals-value total-value"><?php echo number_format($cartTotal, 2); ?>€</div>
                             </div>
-                            <a href="checkout.php" class="btn-checkout">
+                            <a href="checkout.php" class="btn-checkout" id="btn-checkout" onclick="window.location.href='checkout.php'; return false;">
                                 Proceder al pago <i class="fas fa-arrow-right"></i>
                             </a>
                         </div>
@@ -317,6 +317,25 @@ $cartTotal = $carritoController->getCartTotal($idUsuario);
                     }
                 }
             });
+
+            // Añadir evento de clic al botón de checkout para diagnosticar problemas
+            const checkoutBtn = document.getElementById('btn-checkout');
+            if (checkoutBtn) {
+                checkoutBtn.addEventListener('click', function(e) {
+                    e.preventDefault(); // Prevenir comportamiento por defecto
+                    console.log('Botón de checkout clickeado');
+
+                    // Intentar redireccionar usando diferentes métodos
+                    try {
+                        window.location.href = 'checkout.php';
+                        console.log('Redirección iniciada');
+                    } catch (error) {
+                        console.error('Error en redirección:', error);
+                        // Intentar método alternativo
+                        window.location.assign('checkout.php');
+                    }
+                });
+            }
 
             // Control de cantidad
             const minusBtns = document.querySelectorAll('.quantity-btn.minus');

@@ -12,52 +12,100 @@ if (!isset($_SESSION['usuario']) || !isset($_SESSION['admin']) || $_SESSION['adm
 
 require_once "../../controller/admin/UsuariosAdminController.php";
 
+// Verificar que el modelo de dirección existe antes de cargarlo
+$direccionModelPath = "../../model/DireccionModel.php";
+if (!file_exists($direccionModelPath)) {
+    // Si el archivo no existe, mostramos un mensaje y creamos un objeto vacío
+    error_log("ERROR: El archivo DireccionModel.php no existe en: " . realpath(dirname($direccionModelPath)) . "/" . basename($direccionModelPath));
+    // Definir una clase simple para evitar errores
+    class DireccionModel
+    {
+        public function getDireccionByUsuario($id)
+        {
+            return null;
+        }
+    }
+} else {
+    require_once $direccionModelPath;
+}
+
 $usuariosController = new UsuariosAdminController();
+$direccionModel = new DireccionModel();
 
 $nombreUsuario = $_SESSION['usuario'];
-$mensaje = '';
-$tipoMensaje = '';
-$accion = 'Editar';
-$usuario = [
-    'id' => '',
-    'nombre' => '',
-    'apellidos' => '',
-    'email' => '',
-    'telefono' => '',
-    'direccion' => '',
-    'admin' => 0
-];
+$modoEdicion = false;
+$usuario = null;
+$direccion = null;
+$titulo = "Añadir Nuevo Usuario";
+$errorMensaje = '';
 
-// Verificar si se proporciona un ID
-if (isset($_GET['id'])) {
-    $usuario = $usuariosController->getUsuarioById($_GET['id']);
+// Obtener usuario si estamos en modo edición
+if (isset($_GET['id']) && !empty($_GET['id'])) {
+    $modoEdicion = true;
+    $idUsuario = $_GET['id'];
+    $usuario = $usuariosController->getUsuarioById($idUsuario);
+
     if (!$usuario) {
-        header("Location: usuarios.php");
+        header("Location: usuarios.php?mensaje=" . urlencode("Usuario no encontrado") . "&tipo=error");
         exit();
     }
+
+    // Obtener la dirección del usuario - envolvemos en try/catch para evitar interrupciones
+    try {
+        $direccion = $direccionModel->getDireccionByUsuario($idUsuario);
+        if (!$direccion) {
+            error_log("No se encontró dirección para el usuario ID: " . $idUsuario);
+        }
+    } catch (Exception $e) {
+        error_log("Error al obtener dirección: " . $e->getMessage());
+        $errorMensaje = "No se pudieron cargar los datos de dirección. Por favor, verifique los registros de error.";
+    }
+
+    $titulo = "Editar Usuario";
 }
 
 // Procesar formulario
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Recoger datos del formulario
-    $usuarioData = [
-        'nombre' => $_POST['nombre'],
-        'apellidos' => $_POST['apellidos'],
-        'email' => $_POST['email'],
-        'telefono' => $_POST['telefono'],
-        'direccion' => $_POST['direccion'],
-        'admin' => isset($_POST['admin']) ? 1 : 0
-    ];
+    if (isset($_POST['guardar'])) {
+        // Crear array con datos del usuario
+        $datosUsuario = [
+            'nombre' => $_POST['nombre'] ?? '',
+            'apellidos' => $_POST['apellidos'] ?? '',
+            'email' => $_POST['email'] ?? '',
+            'telefono' => $_POST['telefono'] ?? '',
+            'esAdmin' => $_POST['esAdmin'] ?? 0
+        ];
 
-    // Actualizar usuario
-    $resultado = $usuariosController->updateUsuario($usuario['id'], $usuarioData);
+        // Datos de dirección
+        $datosDireccion = [
+            'calle' => $_POST['calle'] ?? '',
+            'numero' => $_POST['numero'] ?? '',
+            'codigoPostal' => $_POST['codigoPostal'] ?? '',
+            'idUsuario' => $idUsuario ?? null
+        ];
 
-    if ($resultado['success']) {
-        header("Location: usuarios.php?mensaje=" . urlencode($resultado['message']) . "&tipo=success");
-        exit();
-    } else {
-        $mensaje = $resultado['message'];
-        $tipoMensaje = 'error';
+        if ($modoEdicion) {
+            // Actualizar usuario existente
+            $resultado = $usuariosController->updateUsuario($idUsuario, $datosUsuario);
+
+            // Si existe dirección, actualizarla; si no, crearla
+            if ($direccion) {
+                $resultadoDireccion = $direccionModel->updateDireccion($direccion['ID_Direccion'], $datosDireccion);
+            } else if (!empty($datosDireccion['calle'])) {
+                $resultadoDireccion = $direccionModel->createDireccion($datosDireccion);
+            }
+
+            if ($resultado['success']) {
+                header("Location: usuarios.php?mensaje=" . urlencode("Usuario actualizado correctamente") . "&tipo=success");
+                exit();
+            } else {
+                $mensaje = $resultado['message'];
+                $tipoMensaje = 'error';
+            }
+        } else {
+            // Código para crear nuevo usuario (si es necesario)
+            // ...
+        }
     }
 }
 ?>
@@ -68,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editar Usuario - Admin Panel</title>
+    <title><?php echo $titulo; ?> - Admin Panel</title>
     <link rel="stylesheet" href="../css/home.css">
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -107,60 +155,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="admin-container">
             <div class="admin-header">
                 <div class="admin-header-left">
-                    <h1>Editar Usuario</h1>
+                    <h1><?php echo $titulo; ?></h1>
                     <a href="usuarios.php" class="btn-back">
-                        <i class="fas fa-arrow-left"></i> Volver a la lista
+                        <i class="fas fa-arrow-left"></i> Volver a Usuarios
                     </a>
                 </div>
             </div>
 
-            <?php if ($mensaje): ?>
-                <div class="alert alert-<?php echo $tipoMensaje; ?>">
-                    <?php echo $mensaje; ?>
+            <?php if ($errorMensaje): ?>
+                <div class="alert alert-warning">
+                    <?php echo $errorMensaje; ?>
                 </div>
             <?php endif; ?>
 
             <div class="admin-content">
-                <form method="post" class="admin-form">
-                    <div class="form-grid">
+                <form method="post" action="" class="admin-form">
+                    <!-- Datos personales -->
+                    <div class="form-section">
+                        <h2>Datos Personales</h2>
+
                         <div class="form-group">
-                            <label for="nombre">Nombre*:</label>
-                            <input type="text" id="nombre" name="nombre" value="<?php echo htmlspecialchars($usuario['nombre']); ?>" required>
+                            <label for="nombre">Nombre *</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre"
+                                value="<?php echo htmlspecialchars($usuario['nombre'] ?? ''); ?>" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="apellidos">Apellidos:</label>
-                            <input type="text" id="apellidos" name="apellidos" value="<?php echo htmlspecialchars($usuario['apellidos']); ?>">
+                            <label for="apellidos">Apellidos</label>
+                            <input type="text" class="form-control" id="apellidos" name="apellidos"
+                                value="<?php echo htmlspecialchars($usuario['apellidos'] ?? ''); ?>">
                         </div>
 
                         <div class="form-group">
-                            <label for="email">Email*:</label>
-                            <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($usuario['email']); ?>" required>
+                            <label for="email">Email *</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                value="<?php echo htmlspecialchars($usuario['correo'] ?? ''); ?>" required>
                         </div>
 
                         <div class="form-group">
-                            <label for="telefono">Teléfono:</label>
-                            <input type="text" id="telefono" name="telefono" value="<?php echo htmlspecialchars($usuario['telefono']); ?>">
+                            <label for="telefono">Teléfono</label>
+                            <input type="tel" class="form-control" id="telefono" name="telefono"
+                                value="<?php echo htmlspecialchars($usuario['telefono'] ?? ''); ?>">
                         </div>
+                    </div>
 
-                        <div class="form-group full-width">
-                            <label for="direccion">Dirección:</label>
-                            <textarea id="direccion" name="direccion" rows="3"><?php echo htmlspecialchars($usuario['direccion']); ?></textarea>
-                        </div>
+                    <!-- Dirección -->
+                    <div class="form-section">
+                        <h2>Dirección</h2>
 
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                <label for="admin">
-                                    <input type="checkbox" id="admin" name="admin" <?php echo $usuario['admin'] ? 'checked' : ''; ?>>
-                                    Permisos de administrador
-                                </label>
+                        <?php if (isset($errorConexion) && $errorConexion): ?>
+                            <div class="alert alert-warning">
+                                No se pudo conectar a la base de datos para obtener la información de dirección.
                             </div>
+                        <?php endif; ?>
+
+                        <div class="form-group">
+                            <label for="calle">Calle</label>
+                            <input type="text" class="form-control" id="calle" name="calle"
+                                value="<?php echo htmlspecialchars($direccion['calle'] ?? ''); ?>">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="numero">Número</label>
+                            <input type="text" class="form-control" id="numero" name="numero"
+                                value="<?php echo htmlspecialchars($direccion['numero'] ?? ''); ?>">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="codigoPostal">Código Postal</label>
+                            <input type="text" class="form-control" id="codigoPostal" name="codigoPostal"
+                                value="<?php echo htmlspecialchars($direccion['codigoPostal'] ?? ''); ?>">
+                        </div>
+                    </div>
+
+                    <!-- Permisos -->
+                    <div class="form-section">
+                        <h2>Permisos</h2>
+
+                        <div class="form-group">
+                            <label for="esAdmin">Permisos de administrador</label>
+                            <select class="form-control" id="esAdmin" name="esAdmin">
+                                <option value="0" <?php echo (($usuario['esAdmin'] ?? 0) == 0) ? 'selected' : ''; ?>>Usuario estándar</option>
+                                <option value="1" <?php echo (($usuario['esAdmin'] ?? 0) == 1) ? 'selected' : ''; ?>>Administrador</option>
+                            </select>
                         </div>
                     </div>
 
                     <div class="form-actions">
                         <a href="usuarios.php" class="btn-cancel">Cancelar</a>
-                        <button type="submit" class="btn-submit">Guardar cambios</button>
+                        <button type="submit" name="guardar" class="btn-save">Guardar</button>
                     </div>
                 </form>
             </div>

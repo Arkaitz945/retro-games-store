@@ -124,7 +124,6 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                     <thead>
                         <tr>
                             <th>ID</th>
-                            <th>Imagen</th>
                             <th>Nombre</th>
                             <th>Plataforma</th>
                             <th>Género</th>
@@ -137,7 +136,7 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                     <tbody>
                         <?php if (empty($juegos)): ?>
                             <tr>
-                                <td colspan="9" class="no-results">No hay videojuegos disponibles</td>
+                                <td colspan="8" class="no-results">No hay videojuegos disponibles</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($juegos as $juego): ?>
@@ -145,9 +144,6 @@ if (isset($_POST['delete']) && isset($_POST['id'])) {
                                     data-plataforma="<?php echo htmlspecialchars($juego['plataforma']); ?>"
                                     data-estado="<?php echo htmlspecialchars($juego['estado']); ?>">
                                     <td><?php echo $juego['ID_J']; ?></td>
-                                    <td class="product-image">
-                                        <img src="<?php echo htmlspecialchars($juego['imagen']); ?>" alt="<?php echo htmlspecialchars($juego['nombre']); ?>">
-                                    </td>
                                     <td><?php echo htmlspecialchars($juego['nombre']); ?></td>
                                     <td><?php echo htmlspecialchars($juego['plataforma']); ?></td>
                                     <td><?php echo htmlspecialchars($juego['genero']); ?></td>
