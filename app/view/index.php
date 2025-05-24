@@ -1,3 +1,27 @@
+<?php
+// Activar depuración para mostrar errores durante el desarrollo
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
+// Incluir la conexión a la base de datos directamente para verificar antes de todo
+require_once "../config/dbConnection.php";
+
+// Prueba de conexión antes de continuar
+$testConn = getDBConnection();
+if (!$testConn) {
+    echo '<div style="padding: 20px; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; margin: 20px;">
+    <h3>Error de conexión a la base de datos</h3>
+    <p>No se pudo establecer conexión con la base de datos. Por favor, verifica la configuración.</p>
+    <p>Asegúrate de que:</p>
+    <ul>
+        <li>MySQL/MariaDB está corriendo en XAMPP</li>
+        <li>La base de datos "retro_games" existe</li>
+        <li>El usuario tiene permisos para acceder</li>
+    </ul>
+    </div>';
+}
+?>
+
 <!DOCTYPE html>
 <html lang="es">
 
@@ -47,35 +71,51 @@
     </div>
 
     <?php
-    require_once "../controller/UsuarioController.php";
-
-    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
+    // Solo procesar el login si tenemos conexión a la base de datos
+    if ($testConn && $_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['login'])) {
         $campoEmailSaneado = htmlspecialchars($_POST['email']);
         $campoContraseñaSaneado = htmlspecialchars($_POST['password']);
 
-        $usuarioValido = (new UsuarioController())->loginUsuario($campoEmailSaneado, $campoContraseñaSaneado);
-        if ($usuarioValido == true) {
-            // Start session if not already started
-            if (session_status() == PHP_SESSION_NONE) {
-                session_start();
-            }
+        // Mostrar datos para depuración
+        error_log("Login attempt: Email=$campoEmailSaneado");
 
-            // Save user information in session
-            $_SESSION['usuario'] = $usuarioValido[0]['nombre']; // Save the user's name
-            $_SESSION['id'] = $usuarioValido[0]['ID_Usuario'];
-            $_SESSION['admin'] = $usuarioValido[0]['EsAdmin'];
-            header("Location: home.php");
-            exit();
-        } else {
-            echo "<script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const authContainer = document.querySelector('.auth-container');
-                    const errorMsg = document.createElement('div');
-                    errorMsg.className = 'alert alert-danger';
-                    errorMsg.textContent = 'Usuario o contraseña incorrectos.';
-                    authContainer.insertBefore(errorMsg, document.querySelector('form'));
-                });
-            </script>";
+        require_once "../controller/UsuarioController.php";
+        $usuarioController = new UsuarioController();
+
+        try {
+            $usuarioValido = $usuarioController->loginUsuario($campoEmailSaneado, $campoContraseñaSaneado);
+
+            if ($usuarioValido) {
+                // Start session if not already started
+                if (session_status() == PHP_SESSION_NONE) {
+                    session_start();
+                }
+
+                // Debug info
+                error_log("Login successful: " . print_r($usuarioValido[0], true));
+
+                // Save user information in session
+                $_SESSION['usuario'] = $usuarioValido[0]['nombre'];
+                $_SESSION['id'] = $usuarioValido[0]['ID_U'];
+                $_SESSION['admin'] = $usuarioValido[0]['esAdmin'];
+
+                header("Location: home.php");
+                exit();
+            } else {
+                $error_message = 'Usuario o contraseña incorrectos.';
+                echo "<script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const authContainer = document.querySelector('.auth-container');
+                        const errorMsg = document.createElement('div');
+                        errorMsg.className = 'alert alert-danger';
+                        errorMsg.textContent = 'Usuario o contraseña incorrectos.';
+                        authContainer.insertBefore(errorMsg, document.querySelector('form'));
+                    });
+                </script>";
+            }
+        } catch (Exception $e) {
+            error_log("Error en el proceso de login: " . $e->getMessage());
+            echo "<div class='alert alert-danger'>Error en el sistema. Por favor, intente más tarde.</div>";
         }
     }
     ?>

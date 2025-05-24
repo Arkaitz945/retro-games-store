@@ -15,112 +15,94 @@ class AjustesController
     }
 
     /**
-     * Obtener datos del usuario
+     * Obtener los datos del usuario por ID
      * 
      * @param int $idUsuario ID del usuario
-     * @return mixed Array con datos del usuario o false
+     * @return array|bool Datos del usuario o false si no existe
      */
-    public function getUsuario($idUsuario)
+    public function getUserById($idUsuario)
     {
         return $this->usuarioModel->getUserById($idUsuario);
     }
 
     /**
-     * Actualizar perfil del usuario
+     * Obtener la dirección del usuario
      * 
      * @param int $idUsuario ID del usuario
-     * @param string $nombre Nombre del usuario
-     * @param string $apellidos Apellidos del usuario
-     * @return array Resultado de la operación
+     * @return array|null Datos de la dirección o null si no existe
      */
-    public function actualizarPerfil($idUsuario, $nombre, $apellidos)
+    public function getDireccionUsuario($idUsuario)
     {
-        $resultado = $this->usuarioModel->updateUserProfile($idUsuario, $nombre, $apellidos);
+        return $this->direccionModel->getDireccionByUsuario($idUsuario);
+    }
 
-        if ($resultado) {
-            return [
-                'success' => true,
-                'message' => 'Perfil actualizado correctamente'
-            ];
+    /**
+     * Actualizar los datos del usuario
+     * 
+     * @param int $idUsuario ID del usuario
+     * @param array $datos Nuevos datos del usuario
+     * @return bool Resultado de la operación
+     */
+    public function updateUser($idUsuario, $datos)
+    {
+        return $this->usuarioModel->updateUser($idUsuario, $datos);
+    }
+
+    /**
+     * Actualizar o crear la dirección del usuario
+     * 
+     * @param int $idUsuario ID del usuario
+     * @param array $datos Datos de la dirección
+     * @return bool Resultado de la operación
+     */
+    public function updateDireccion($idUsuario, $datos)
+    {
+        // Verificar si ya existe una dirección para este usuario
+        $direccion = $this->direccionModel->getDireccionByUsuario($idUsuario);
+
+        if ($direccion) {
+            // Actualizar dirección existente
+            return $this->direccionModel->updateDireccion($direccion['ID_Direccion'], $datos);
         } else {
-            return [
-                'success' => false,
-                'message' => 'Error al actualizar el perfil'
-            ];
+            // Crear nueva dirección
+            $datos['ID_U'] = $idUsuario;
+            return $this->direccionModel->createDireccion($datos);
         }
     }
 
     /**
-     * Actualizar correo del usuario
+     * Cambiar la contraseña del usuario
      * 
      * @param int $idUsuario ID del usuario
-     * @param string $email Nuevo correo
-     * @return array Resultado de la operación
-     */
-    public function actualizarEmail($idUsuario, $email)
-    {
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return [
-                'success' => false,
-                'message' => 'El correo electrónico no es válido'
-            ];
-        }
-
-        $resultado = $this->usuarioModel->updateUserEmail($idUsuario, $email);
-
-        if ($resultado) {
-            return [
-                'success' => true,
-                'message' => 'Correo electrónico actualizado correctamente'
-            ];
-        } else {
-            return [
-                'success' => false,
-                'message' => 'El correo electrónico ya está en uso por otro usuario'
-            ];
-        }
-    }
-
-    /**
-     * Actualizar contraseña del usuario
-     * 
-     * @param int $idUsuario ID del usuario
-     * @param string $currentPassword Contraseña actual
+     * @param string $oldPassword Contraseña actual
      * @param string $newPassword Nueva contraseña
-     * @param string $confirmPassword Confirmación de nueva contraseña
      * @return array Resultado de la operación
      */
-    public function actualizarContraseña($idUsuario, $currentPassword, $newPassword, $confirmPassword)
+    public function changePassword($idUsuario, $oldPassword, $newPassword)
     {
+        // Obtener usuario para verificar contraseña actual
+        $usuario = $this->usuarioModel->getUserById($idUsuario);
+
+        if (!$usuario) {
+            return [
+                'success' => false,
+                'message' => 'Usuario no encontrado'
+            ];
+        }
+
         // Verificar contraseña actual
-        if (!$this->usuarioModel->verifyUserPassword($idUsuario, $currentPassword)) {
+        if (!password_verify($oldPassword, $usuario['contraseña'])) {
             return [
                 'success' => false,
                 'message' => 'La contraseña actual es incorrecta'
             ];
         }
 
-        // Verificar que las nuevas contraseñas coincidan
-        if ($newPassword !== $confirmPassword) {
-            return [
-                'success' => false,
-                'message' => 'Las nuevas contraseñas no coinciden'
-            ];
-        }
-
-        // Verificar longitud mínima
-        if (strlen($newPassword) < 6) {
-            return [
-                'success' => false,
-                'message' => 'La nueva contraseña debe tener al menos 6 caracteres'
-            ];
-        }
-
         // Actualizar contraseña
         $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
-        $resultado = $this->usuarioModel->updateUserPassword($idUsuario, $hashedPassword);
+        $result = $this->usuarioModel->updatePassword($idUsuario, $hashedPassword);
 
-        if ($resultado) {
+        if ($result) {
             return [
                 'success' => true,
                 'message' => 'Contraseña actualizada correctamente'
@@ -129,88 +111,6 @@ class AjustesController
             return [
                 'success' => false,
                 'message' => 'Error al actualizar la contraseña'
-            ];
-        }
-    }
-
-    /**
-     * Obtener direcciones del usuario
-     * 
-     * @param int $idUsuario ID del usuario
-     * @return array Direcciones del usuario
-     */
-    public function getDirecciones($idUsuario)
-    {
-        return $this->direccionModel->getDireccionesByUsuario($idUsuario);
-    }
-
-    /**
-     * Añadir dirección
-     * 
-     * @param array $direccion Datos de la dirección
-     * @return array Resultado de la operación
-     */
-    public function añadirDireccion($direccion)
-    {
-        $resultado = $this->direccionModel->createDireccion($direccion);
-
-        if ($resultado) {
-            return [
-                'success' => true,
-                'message' => 'Dirección añadida correctamente',
-                'id' => $resultado
-            ];
-        } else {
-            return [
-                'success' => false,
-                'message' => 'Error al añadir la dirección'
-            ];
-        }
-    }
-
-    /**
-     * Actualizar dirección
-     * 
-     * @param array $direccion Datos de la dirección
-     * @return array Resultado de la operación
-     */
-    public function actualizarDireccion($direccion)
-    {
-        $resultado = $this->direccionModel->updateDireccion($direccion);
-
-        if ($resultado) {
-            return [
-                'success' => true,
-                'message' => 'Dirección actualizada correctamente'
-            ];
-        } else {
-            return [
-                'success' => false,
-                'message' => 'Error al actualizar la dirección'
-            ];
-        }
-    }
-
-    /**
-     * Eliminar dirección
-     * 
-     * @param int $idDireccion ID de la dirección
-     * @param int $idUsuario ID del usuario
-     * @return array Resultado de la operación
-     */
-    public function eliminarDireccion($idDireccion, $idUsuario)
-    {
-        $resultado = $this->direccionModel->deleteDireccion($idDireccion, $idUsuario);
-
-        if ($resultado) {
-            return [
-                'success' => true,
-                'message' => 'Dirección eliminada correctamente'
-            ];
-        } else {
-            return [
-                'success' => false,
-                'message' => 'Error al eliminar la dirección'
             ];
         }
     }

@@ -1,20 +1,12 @@
 <?php
 
-function getDBConnection()
-{
-    $host = "localhost";
-    $db_name = "retrogamestore";
-    $username = "admin";
-    $password = "admin";
+// Este archivo redirige al archivo de conexión principal
+// para evitar duplicación de código y mantener consistencia
 
-    try {
-        $conn = new PDO("mysql:host=$host;dbname=$db_name", $username, $password);
-        $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-        return $conn;
-    } catch (PDOException $e) {
-        // Mejorar el manejo de errores para más detalles
-        error_log('Connection error: ' . $e->getMessage());
-        echo 'Error de conexión: No se pudo conectar a la base de datos';
-        return null;
-    }
+// Verificar si la función ya ha sido declarada
+if (!function_exists('getDBConnection')) {
+    // Incluir el archivo principal de conexión
+    require_once __DIR__ . '/../app/config/dbConnection.php';
 }
+
+// No es necesario definir la función de nuevo, ya que se incluye desde el otro archivo

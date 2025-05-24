@@ -1,19 +1,25 @@
 <?php
 
-use Illuminate\Database\Capsule\Manager as Capsule;
+require_once __DIR__ . "/../app/config/dbConnection.php";
 
-$capsule = new Capsule();
+class Database
+{
+    private $host = "localhost";
+    private $dbName = "retro_games"; // Usar el mismo nombre que en dbConnection.php
+    private $username = "root";
+    private $password = "";
+    private $conn;
 
-$capsule->addConnection([
-    'driver'    => 'mysql',
-    'host'      => $_ENV['DB_HOST'],
-    'database'  => $_ENV['DB_NAME'],
-    'username'  => $_ENV['DB_USER'],
-    'password'  => $_ENV['DB_PASS'],
-    'charset'   => 'utf8mb4',
-    'collation' => 'utf8mb4_unicode_ci',
-    'prefix'    => '',
-]);
+    public function getConnection()
+    {
+        // Usar la función global para mantener consistencia
+        $this->conn = getDBConnection();
+        return $this->conn;
+    }
 
-$capsule->setAsGlobal();
-$capsule->bootEloquent();
+    // Para mantener compatibilidad con código existente
+    public function getDBConnection()
+    {
+        return $this->getConnection();
+    }
+}

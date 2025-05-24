@@ -187,21 +187,37 @@ class CarritoModel
     }
 
     /**
-     * Vaciar todo el carrito de un usuario
+     * Vacía el carrito de un usuario
      * 
      * @param int $idUsuario ID del usuario
-     * @return bool True si se vació correctamente
+     * @return bool Resultado de la operación
      */
     public function clearCart($idUsuario)
     {
         try {
+            // Primero verificar que la conexión existe
+            if (!$this->conn) {
+                error_log("CarritoModel: No se puede vaciar el carrito - La conexión a la base de datos es nula");
+                return false;
+            }
+
+            // Corregido el nombre de la columna - debe ser ID_U en lugar de ID_Usuario
             $query = "DELETE FROM carrito WHERE ID_U = :idUsuario";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":idUsuario", $idUsuario, PDO::PARAM_INT);
+            $stmt->bindParam(':idUsuario', $idUsuario, PDO::PARAM_INT);
 
-            return $stmt->execute();
+            $result = $stmt->execute();
+
+            // Registrar el resultado para depuración
+            if ($result) {
+                error_log("CarritoModel: Carrito vaciado correctamente para el usuario ID: " . $idUsuario);
+            } else {
+                error_log("CarritoModel: Error al vaciar el carrito para el usuario ID: " . $idUsuario);
+            }
+
+            return $result;
         } catch (PDOException $e) {
-            error_log("Error vaciando el carrito: " . $e->getMessage());
+            error_log("CarritoModel: Error al vaciar el carrito - " . $e->getMessage());
             return false;
         }
     }

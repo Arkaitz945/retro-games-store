@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . "/../config/database.php";
+require_once __DIR__ . "/../../config/database.php";
 
 class DireccionModel
 {
@@ -8,8 +8,9 @@ class DireccionModel
 
     public function __construct()
     {
-        $database = new Database();
-        $this->conn = $database->getConnection();
+        // Inicializar la conexión a la base de datos
+        $db = new Database();
+        $this->conn = $db->getConnection();
 
         // Verificar si la conexión se estableció correctamente
         if (!$this->conn) {
@@ -38,28 +39,41 @@ class DireccionModel
             $tableExistsStmt->execute();
 
             if ($tableExistsStmt->rowCount() == 0) {
-                error_log("DireccionModel: La tabla 'direccion' no existe en la base de datos");
-                return null;
+                // La tabla no existe, intentar crearla
+                $this->crearTablaDireccion();
             }
 
-            $query = "SELECT * FROM direccion WHERE idUsuario = :idUsuario LIMIT 1";
+            $query = "SELECT * FROM direccion WHERE ID_U = :idUsuario LIMIT 1";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(':idUsuario', $idUsuario);
+            $stmt->bindParam(':idUsuario', $idUsuario, PDO::PARAM_INT);
             $stmt->execute();
 
             $direccion = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            // Registrar si se encontró dirección o no
-            if ($direccion) {
-                error_log("DireccionModel: Dirección encontrada para el usuario ID: " . $idUsuario);
-            } else {
-                error_log("DireccionModel: No se encontró dirección para el usuario ID: " . $idUsuario);
-            }
-
             return $direccion ?: null;
         } catch (PDOException $e) {
             error_log("DireccionModel: Error al obtener dirección - " . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Crea la tabla direccion si no existe
+     */
+    private function crearTablaDireccion()
+    {
+        try {
+            $sql = "CREATE TABLE IF NOT EXISTS direccion (
+                ID_Direccion INT AUTO_INCREMENT PRIMARY KEY,
+                calle VARCHAR(255) NOT NULL,
+                numero VARCHAR(50) NOT NULL,
+                codigoPostal VARCHAR(10) NOT NULL,
+                ID_U INT NOT NULL,
+                FOREIGN KEY (ID_U) REFERENCES usuarios(ID_U)
+            )";
+            $this->conn->exec($sql);
+            error_log("DireccionModel: Tabla 'direccion' creada correctamente");
+        } catch (PDOException $e) {
+            error_log("DireccionModel: Error al crear tabla 'direccion' - " . $e->getMessage());
         }
     }
 

@@ -5,139 +5,115 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 // Verificar si el usuario está logueado
-if (!isset($_SESSION['usuario']) || !isset($_SESSION['id'])) {
+if (!isset($_SESSION['usuario'])) {
     header("Location: index.php");
     exit();
 }
 
+// Incluir controlador
 require_once "../controller/AjustesController.php";
-require_once "../controller/CarritoController.php";
 
 $ajustesController = new AjustesController();
-$carritoController = new CarritoController();
-
 $idUsuario = $_SESSION['id'];
 $nombreUsuario = $_SESSION['usuario'];
 $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
-$cantidadCarrito = isset($_SESSION['id']) ? $carritoController->countCartItems($_SESSION['id']) : 0;
 
 // Obtener datos del usuario
-$usuario = $ajustesController->getUsuario($idUsuario);
-$direcciones = $ajustesController->getDirecciones($idUsuario);
+$usuario = $ajustesController->getUserById($idUsuario);
+$direccion = $ajustesController->getDireccionUsuario($idUsuario);
 
-// Variable para mensajes
+// Inicializar array de mensajes para diferentes formularios
 $mensajes = [
-    'perfil' => ['tipo' => '', 'texto' => ''],
-    'email' => ['tipo' => '', 'texto' => ''],
+    'datos' => ['tipo' => '', 'texto' => ''],
+    'direccion' => ['tipo' => '', 'texto' => ''],
     'password' => ['tipo' => '', 'texto' => ''],
-    'direccion' => ['tipo' => '', 'texto' => '']
+    'cuenta' => ['tipo' => '', 'texto' => ''],
+    'correo' => ['tipo' => '', 'texto' => '']
 ];
 
-// Procesar formulario de perfil
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['actualizar_perfil'])) {
-    $nombre = htmlspecialchars(trim($_POST['nombre']));
-    $apellidos = htmlspecialchars(trim($_POST['apellidos']));
+// Determinar la pestaña activa - por defecto 'perfil'
+$activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'perfil';
 
-    if (empty($nombre)) {
-        $mensajes['perfil'] = ['tipo' => 'error', 'texto' => 'El nombre es obligatorio'];
-    } else {
-        $resultado = $ajustesController->actualizarPerfil($idUsuario, $nombre, $apellidos);
-        $mensajes['perfil'] = [
-            'tipo' => $resultado['success'] ? 'success' : 'error',
-            'texto' => $resultado['message']
+// Variables para mensaje general
+$mensaje = null;
+$tipoMensaje = null;
+
+// Procesar formularios
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    // Actualizar datos personales
+    if (isset($_POST['actualizar_datos'])) {
+        $datos = [
+            'nombre' => $_POST['nombre'],
+            'apellidos' => $_POST['apellidos'],
+            'correo' => $_POST['correo']
         ];
 
-        if ($resultado['success']) {
-            $_SESSION['usuario'] = $nombre;
-            $usuario['nombre'] = $nombre;
-            $usuario['apellidos'] = $apellidos;
+        $resultado = $ajustesController->updateUser($idUsuario, $datos);
+
+        if ($resultado) {
+            $mensajes['datos']['tipo'] = 'success';
+            $mensajes['datos']['texto'] = "Datos actualizados correctamente";
+            // Actualizar nombre de usuario en sesión
+            $_SESSION['usuario'] = $_POST['nombre'];
+            $nombreUsuario = $_POST['nombre'];
+            // Actualizar datos en la variable
+            $usuario = $ajustesController->getUserById($idUsuario);
+        } else {
+            $mensajes['datos']['tipo'] = 'error';
+            $mensajes['datos']['texto'] = "Error al actualizar los datos";
         }
     }
-}
 
-// Procesar formulario de email
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['actualizar_email'])) {
-    $email = htmlspecialchars(trim($_POST['email']));
-
-    if (empty($email)) {
-        $mensajes['email'] = ['tipo' => 'error', 'texto' => 'El email es obligatorio'];
-    } else {
-        $resultado = $ajustesController->actualizarEmail($idUsuario, $email);
-        $mensajes['email'] = [
-            'tipo' => $resultado['success'] ? 'success' : 'error',
-            'texto' => $resultado['message']
+    // Actualizar dirección
+    if (isset($_POST['actualizar_direccion'])) {
+        $datosDireccion = [
+            'calle' => $_POST['calle'],
+            'numero' => $_POST['numero'],
+            'codigoPostal' => $_POST['codigo_postal']
         ];
 
-        if ($resultado['success']) {
-            $usuario['correo'] = $email;
+        $resultadoDireccion = $ajustesController->updateDireccion($idUsuario, $datosDireccion);
+
+        if ($resultadoDireccion) {
+            $mensajes['direccion']['tipo'] = 'success';
+            $mensajes['direccion']['texto'] = "Dirección actualizada correctamente";
+            // Actualizar datos en la variable
+            $direccion = $ajustesController->getDireccionUsuario($idUsuario);
+        } else {
+            $mensajes['direccion']['tipo'] = 'error';
+            $mensajes['direccion']['texto'] = "Error al actualizar la dirección";
         }
     }
-}
 
-// Procesar formulario de contraseña
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['actualizar_password'])) {
-    $currentPassword = $_POST['current_password'];
-    $newPassword = $_POST['new_password'];
-    $confirmPassword = $_POST['confirm_password'];
+    // Cambiar contraseña
+    if (isset($_POST['cambiar_password'])) {
+        $oldPassword = $_POST['password_actual'];
+        $newPassword = $_POST['password_nueva'];
+        $confirmPassword = $_POST['password_confirmar'];
 
-    $resultado = $ajustesController->actualizarContraseña($idUsuario, $currentPassword, $newPassword, $confirmPassword);
-    $mensajes['password'] = [
-        'tipo' => $resultado['success'] ? 'success' : 'error',
-        'texto' => $resultado['message']
-    ];
-}
+        if ($newPassword !== $confirmPassword) {
+            $mensajes['password']['tipo'] = 'error';
+            $mensajes['password']['texto'] = "Las contraseñas no coinciden";
+        } else {
+            $resultadoPassword = $ajustesController->changePassword($idUsuario, $oldPassword, $newPassword);
 
-// Procesar formulario de dirección
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['guardar_direccion'])) {
-    $direccion = [
-        'calle' => htmlspecialchars(trim($_POST['calle'])),
-        'numero' => htmlspecialchars(trim($_POST['numero'])),
-        'codigoPostal' => htmlspecialchars(trim($_POST['codigo_postal'])),
-        'idUsuario' => $idUsuario
-    ];
-
-    if (isset($_POST['id_direccion']) && !empty($_POST['id_direccion'])) {
-        // Actualizar dirección existente
-        $direccion['ID_Direccion'] = (int)$_POST['id_direccion'];
-        $resultado = $ajustesController->actualizarDireccion($direccion);
-    } else {
-        // Añadir nueva dirección
-        $resultado = $ajustesController->añadirDireccion($direccion);
+            if ($resultadoPassword['success']) {
+                $mensajes['password']['tipo'] = 'success';
+                $mensajes['password']['texto'] = $resultadoPassword['message'];
+            } else {
+                $mensajes['password']['tipo'] = 'error';
+                $mensajes['password']['texto'] = $resultadoPassword['message'];
+            }
+        }
     }
 
-    $mensajes['direccion'] = [
-        'tipo' => $resultado['success'] ? 'success' : 'error',
-        'texto' => $resultado['message']
-    ];
+    // Eliminar cuenta (si existe esta funcionalidad)
+    if (isset($_POST['eliminar_cuenta'])) {
+        // Lógica para eliminar cuenta
+        // ...
 
-    if ($resultado['success']) {
-        // Recargar direcciones
-        $direcciones = $ajustesController->getDirecciones($idUsuario);
-    }
-}
-
-// Procesar eliminación de dirección
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['eliminar_direccion'])) {
-    $idDireccion = (int)$_POST['id_direccion'];
-
-    $resultado = $ajustesController->eliminarDireccion($idDireccion, $idUsuario);
-    $mensajes['direccion'] = [
-        'tipo' => $resultado['success'] ? 'success' : 'error',
-        'texto' => $resultado['message']
-    ];
-
-    if ($resultado['success']) {
-        // Recargar direcciones
-        $direcciones = $ajustesController->getDirecciones($idUsuario);
-    }
-}
-
-// Determinar pestaña activa
-$activeTab = 'perfil';
-if (isset($_GET['tab'])) {
-    $allowedTabs = ['perfil', 'email', 'password', 'direcciones'];
-    if (in_array($_GET['tab'], $allowedTabs)) {
-        $activeTab = $_GET['tab'];
+        $mensajes['cuenta']['tipo'] = 'info';
+        $mensajes['cuenta']['texto'] = "Esta funcionalidad aún no está implementada";
     }
 }
 ?>
@@ -210,7 +186,7 @@ if (isset($_GET['tab'])) {
                     <div class="settings-tab <?php echo $activeTab === 'perfil' ? 'active' : ''; ?>" data-tab="perfil">
                         <i class="fas fa-user"></i> Perfil
                     </div>
-                    <div class="settings-tab <?php echo $activeTab === 'email' ? 'active' : ''; ?>" data-tab="email">
+                    <div class="settings-tab <?php echo $activeTab === 'correo' ? 'active' : ''; ?>" data-tab="correo">
                         <i class="fas fa-envelope"></i> Correo Electrónico
                     </div>
                     <div class="settings-tab <?php echo $activeTab === 'password' ? 'active' : ''; ?>" data-tab="password">
@@ -226,9 +202,9 @@ if (isset($_GET['tab'])) {
                     <div class="tab-panel <?php echo $activeTab === 'perfil' ? 'active' : ''; ?>" id="perfil-panel">
                         <h2>Información Personal</h2>
 
-                        <?php if ($mensajes['perfil']['texto']): ?>
-                            <div class="form-message <?php echo $mensajes['perfil']['tipo']; ?>">
-                                <?php echo $mensajes['perfil']['texto']; ?>
+                        <?php if (!empty($mensajes['datos']['texto'])): ?>
+                            <div class="alert alert-<?php echo $mensajes['datos']['tipo']; ?>">
+                                <?php echo $mensajes['datos']['texto']; ?>
                             </div>
                         <?php endif; ?>
 
@@ -247,23 +223,25 @@ if (isset($_GET['tab'])) {
                         </form>
                     </div>
 
-                    <!-- Pestaña de Email -->
-                    <div class="tab-panel <?php echo $activeTab === 'email' ? 'active' : ''; ?>" id="email-panel">
+                    <!-- Pestaña de correo -->
+                    <div class="tab-panel <?php echo $activeTab === 'correo' ? 'active' : ''; ?>" id="correo-panel">
                         <h2>Cambiar Correo Electrónico</h2>
 
-                        <?php if ($mensajes['email']['texto']): ?>
-                            <div class="form-message <?php echo $mensajes['email']['tipo']; ?>">
-                                <?php echo $mensajes['email']['texto']; ?>
+                        <?php if ($mensajes['correo']['texto']): ?>
+                            <div class="form-message <?php echo $mensajes['correo']['tipo']; ?>">
+                                <?php echo $mensajes['correo']['texto']; ?>
                             </div>
                         <?php endif; ?>
 
-                        <form action="ajustes.php?tab=email" method="post">
+                        <form action="ajustes.php?tab=correo" method="post">
                             <div class="form-row">
-                                <label for="email">Correo Electrónico</label>
-                                <input type="email" id="email" name="email" value="<?php echo htmlspecialchars($usuario['correo'] ?? ''); ?>" required>
+                                <label for="correo">Correo Electrónico</label>
+                                <!-- Cambiar type="correo" a type="email" -->
+                                <input type="email" id="correo" name="correo" class="form-control"
+                                    value="<?php echo isset($usuario) && isset($usuario['correo']) ? htmlspecialchars($usuario['correo']) : ''; ?>" required>
                             </div>
 
-                            <button type="submit" name="actualizar_email" class="btn-submit">Cambiar Correo</button>
+                            <button type="submit" name="actualizar_correo" class="btn-submit">Cambiar Correo</button>
                         </form>
                     </div>
 
@@ -271,8 +249,8 @@ if (isset($_GET['tab'])) {
                     <div class="tab-panel <?php echo $activeTab === 'password' ? 'active' : ''; ?>" id="password-panel">
                         <h2>Cambiar Contraseña</h2>
 
-                        <?php if ($mensajes['password']['texto']): ?>
-                            <div class="form-message <?php echo $mensajes['password']['tipo']; ?>">
+                        <?php if (!empty($mensajes['password']['texto'])): ?>
+                            <div class="alert alert-<?php echo $mensajes['password']['tipo']; ?>">
                                 <?php echo $mensajes['password']['texto']; ?>
                             </div>
                         <?php endif; ?>

@@ -39,7 +39,7 @@ if (isset($_POST['agregar_carrito']) && isset($_POST['cantidad'])) {
         $tipoMensaje = 'error';
     } else {
         // Agregar al carrito
-        $resultado = $carritoController->agregarProducto('consola', $idConsola, $cantidad);
+        $resultado = $carritoController->addToCart('consola', $idConsola, $cantidad);
 
         if ($resultado['success']) {
             $mensaje = 'Consola añadida al carrito correctamente';

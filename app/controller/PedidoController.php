@@ -1,14 +1,20 @@
 <?php
 require_once "../model/PedidoModel.php";
-require_once "../config/database.php";
+require_once "../config/dbConnection.php";
 
 class PedidoController
 {
     private $pedidoModel;
+    private $conn;
 
     public function __construct()
     {
         $this->pedidoModel = new PedidoModel();
+        $this->conn = getDBConnection();
+
+        if (!$this->conn) {
+            error_log("PedidoController: Error crítico - No se pudo establecer conexión con la base de datos");
+        }
     }
 
     /**
@@ -23,8 +29,18 @@ class PedidoController
     public function savePedido($idUsuario, $numeroPedido, $cartItems, $total)
     {
         try {
+            // Verificar que tenemos modelo y conexión antes de proceder
+            if (!$this->pedidoModel) {
+                throw new Exception("Error: Modelo de pedido no inicializado");
+            }
+
             // Obtener conexión para manejar transacción
             $db = $this->conectarDB();
+
+            if (!$db) {
+                throw new Exception("No se pudo conectar a la base de datos");
+            }
+
             $db->beginTransaction();
 
             // 1. Crear el pedido principal
@@ -36,6 +52,13 @@ class PedidoController
 
             // 2. Guardar cada producto en detallespedido
             foreach ($cartItems as $item) {
+                error_log("PedidoController::savePedido - Procesando item: " . print_r($item, true));
+
+                if (!isset($item['producto_id'])) {
+                    error_log("PedidoController::savePedido - Falta producto_id en el item del carrito");
+                    throw new Exception("Datos de producto incompletos");
+                }
+
                 $result = $this->pedidoModel->saveOrderDetail(
                     $idPedido,
                     $item['producto_id'],
@@ -44,12 +67,13 @@ class PedidoController
                 );
 
                 if (!$result) {
-                    throw new Exception("Error al guardar el producto " . $item['nombre'] . " en el pedido");
+                    throw new Exception("Error al guardar el producto " . ($item['nombre'] ?? 'Desconocido') . " en el pedido");
                 }
             }
 
             // Confirmar transacción
             $db->commit();
+            error_log("PedidoController::savePedido - Pedido guardado correctamente: ID=$idPedido, Número=$numeroPedido");
 
             return [
                 'success' => true,
@@ -63,24 +87,13 @@ class PedidoController
                 $db->rollBack();
             }
 
-            error_log("Error al guardar pedido: " . $e->getMessage());
+            error_log("PedidoController::savePedido - Error: " . $e->getMessage());
 
             return [
                 'success' => false,
                 'message' => 'Error al guardar el pedido: ' . $e->getMessage()
             ];
         }
-    }
-
-    /**
-     * Obtener los detalles de un pedido
-     * 
-     * @param int $idPedido ID del pedido
-     * @return array Detalles del pedido
-     */
-    public function getOrderDetails($idPedido)
-    {
-        return $this->pedidoModel->getOrderDetails($idPedido);
     }
 
     /**
@@ -95,28 +108,34 @@ class PedidoController
     }
 
     /**
+     * Obtener un pedido específico por ID y usuario
+     * 
+     * @param int $idUsuario ID del usuario
+     * @param int $idPedido ID del pedido
+     * @return array|bool Datos del pedido o false si no existe
+     */
+    public function getUserOrderById($idUsuario, $idPedido)
+    {
+        return $this->pedidoModel->getUserOrderById($idUsuario, $idPedido);
+    }
+
+    /**
+     * Obtener los detalles de un pedido
+     * 
+     * @param int $idPedido ID del pedido
+     * @return array Detalles del pedido
+     */
+    public function getOrderDetails($idPedido)
+    {
+        return $this->pedidoModel->getOrderDetails($idPedido);
+    }
+
+    /**
      * Establece conexión con la base de datos
      * @return PDO Objeto de conexión PDO
      */
     private function conectarDB()
     {
-        try {
-            $host = 'localhost';
-            $dbname = 'retro_games_db';
-            $username = 'root';
-            $password = '';
-
-            $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8";
-            $options = [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ];
-
-            return new PDO($dsn, $username, $password, $options);
-        } catch (PDOException $e) {
-            error_log("Error de conexión a la BD: " . $e->getMessage());
-            throw new Exception("Error de conexión a la base de datos. Por favor, inténtelo de nuevo más tarde.");
-        }
+        return $this->conn ?: getDBConnection();
     }
 }

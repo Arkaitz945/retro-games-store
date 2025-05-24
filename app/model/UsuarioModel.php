@@ -1,6 +1,7 @@
 <?php
 
-require_once "../../config/dbConnection.php";
+// Asegurarnos que la ruta de inclusión es correcta
+require_once __DIR__ . "/../../config/dbConnection.php";
 
 class UsuarioModel
 {
@@ -8,11 +9,15 @@ class UsuarioModel
 
     public function __construct()
     {
+        // Obtener la conexión y verificarla inmediatamente
         $this->conn = getDBConnection();
 
         // Verificar si la conexión fue exitosa
         if (!$this->conn) {
-            die("Error: No se pudo conectar a la base de datos");
+            error_log("ERROR CRÍTICO: UsuarioModel no pudo obtener conexión a la base de datos");
+            // No lanzar excepción aquí para evitar errores fatales, manejaremos el error en los métodos
+        } else {
+            error_log("UsuarioModel: Conexión exitosa a la base de datos");
         }
     }
 
@@ -24,7 +29,16 @@ class UsuarioModel
      */
     public function getUserByEmail($email)
     {
+        // Verificar si hay conexión antes de intentar cualquier operación
+        if (!$this->conn) {
+            error_log("UsuarioModel->getUserByEmail: No hay conexión a la base de datos");
+            return false;
+        }
+
         try {
+            // Añadir registro para depuración
+            error_log("UsuarioModel: Buscando usuario con email: $email");
+
             // Cambiado de "email" a "correo" para que coincida con la estructura de la tabla
             $query = "SELECT * FROM usuarios WHERE correo = :email";
             $stmt = $this->conn->prepare($query);
@@ -32,11 +46,14 @@ class UsuarioModel
             $stmt->execute();
 
             if ($stmt->rowCount() > 0) {
-                return $stmt->fetch(PDO::FETCH_ASSOC);
+                $user = $stmt->fetch();
+                error_log("UsuarioModel: Usuario encontrado con email: $email");
+                return $user;
             }
+            error_log("UsuarioModel: No se encontró usuario con email: $email");
             return false;
         } catch (PDOException $e) {
-            error_log("Error al obtener usuario por email: " . $e->getMessage());
+            error_log("UsuarioModel: Error al obtener usuario por email: " . $e->getMessage());
             return false;
         }
     }

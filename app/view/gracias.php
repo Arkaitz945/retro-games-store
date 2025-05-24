@@ -11,14 +11,42 @@ if (!isset($_SESSION['usuario'])) {
 }
 
 // Verificar si viene de un pedido confirmado
-if (!isset($_GET['pedido'])) {
+$numeroPedido = "";
+$mostrarMensaje = false;
+
+if (isset($_GET['pedido'])) {
+    $numeroPedido = $_GET['pedido'];
+    $mostrarMensaje = true;
+} elseif (isset($_SESSION['numero_pedido'])) {
+    $numeroPedido = $_SESSION['numero_pedido'];
+    $mostrarMensaje = true;
+    // Limpiar la sesión para evitar mostrar esta página al recargar
+    unset($_SESSION['numero_pedido']);
+    unset($_SESSION['pedido_completado']);
+}
+
+// Si no hay número de pedido, redirigir a carrito
+if (!$mostrarMensaje) {
     header("Location: carrito.php");
     exit();
 }
 
 $nombreUsuario = $_SESSION['usuario'];
 $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
-$numeroPedido = $_GET['pedido'];
+
+// Recuperar total del pedido si está disponible
+$totalPedido = isset($_SESSION['total_pedido']) ? $_SESSION['total_pedido'] : null;
+if (isset($_SESSION['total_pedido'])) {
+    unset($_SESSION['total_pedido']);
+}
+
+// Si hay carrito en la sesión, eliminarlo
+if (isset($_SESSION['carrito'])) {
+    unset($_SESSION['carrito']);
+}
+
+// Registrar para depuración
+error_log("Mostrando página de agradecimiento para pedido: " . $numeroPedido);
 ?>
 
 <!DOCTYPE html>
@@ -27,11 +55,17 @@ $numeroPedido = $_GET['pedido'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>¡Gracias por tu pedido! - RetroGames Store</title>
+    <title>¡Pedido Completado! - RetroGames Store</title>
     <link rel="stylesheet" href="css/home.css">
-    <link rel="stylesheet" href="css/carrito.css">
+    <link rel="stylesheet" href="css/gracias.css">
     <link rel="stylesheet" href="css/sticky-footer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        // Limpiar cualquier carrito en localStorage al cargar esta página
+        window.onload = function() {
+            localStorage.removeItem('carrito');
+        };
+    </script>
     <style>
         .confirmation-container {
             text-align: center;

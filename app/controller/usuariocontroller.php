@@ -12,41 +12,53 @@ class UsuarioController
     }
 
     /**
-     * Validates user credentials and returns user data if successful
+     * Inicia sesión del usuario
      * 
-     * @param string $email The user's email
-     * @param string $password The password
-     * @return mixed Array with user data if login successful, false otherwise
+     * @param string $email Email del usuario
+     * @param string $password Contraseña del usuario
+     * @return mixed Datos del usuario si el login es correcto, false en caso contrario
      */
     public function loginUsuario($email, $password)
     {
-        // Validate inputs
-        if (empty($email) || empty($password)) {
+        // Depuración para identificar problemas
+        error_log("UsuarioController: Intento de login para email: $email");
+
+        // Obtener usuario por email
+        $usuario = $this->usuarioModel->getUserByEmail($email);
+
+        if (!$usuario) {
+            error_log("UsuarioController: Usuario no encontrado para email: $email");
             return false;
         }
 
-        // Get user from database
-        $usuario = $this->usuarioModel->getUserByEmail($email);
+        // Verificar la contraseña
+        // Asumimos que el campo es 'contraseña', pero adaptamos según sea necesario
+        $campoPassword = isset($usuario['contraseña']) ? 'contraseña' : (isset($usuario['password']) ? 'password' : 'clave');
 
-        // Debugging
-        if ($usuario) {
-            error_log("Usuario encontrado: " . print_r($usuario, true));
+        if (!isset($usuario[$campoPassword])) {
+            error_log("UsuarioController: Campo de contraseña no encontrado en datos de usuario. Campos disponibles: " . implode(", ", array_keys($usuario)));
+            return false;
+        }
+
+        $storedPassword = $usuario[$campoPassword];
+
+        // Depuración
+        error_log("UsuarioController: Verificando password utilizando campo: $campoPassword");
+
+        // Verificar si la contraseña está hasheada
+        if (password_verify($password, $storedPassword)) {
+            error_log("UsuarioController: Password correcto para: $email");
+            return [$usuario]; // Devolver array con el usuario para mantener compatibilidad
         } else {
-            error_log("Usuario no encontrado con email: " . $email);
-        }
+            // Verificar si la contraseña está almacenada sin hash (caso de prueba)
+            if ($password === $storedPassword) {
+                error_log("UsuarioController: Password sin hash correcto para: $email (INSEGURO)");
+                return [$usuario];
+            }
 
-        // If user exists and password is correct
-        if ($usuario && password_verify($password, $usuario['contraseña'])) {
-            return [
-                [
-                    'ID_Usuario' => $usuario['ID_U'],
-                    'nombre' => $usuario['nombre'],
-                    'EsAdmin' => $usuario['esAdmin']
-                ]
-            ];
+            error_log("UsuarioController: Password incorrecto para: $email");
+            return false;
         }
-
-        return false;
     }
 
     /**

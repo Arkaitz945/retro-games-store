@@ -34,45 +34,60 @@ if (empty($cartItems)) {
 // Procesar la confirmación del pedido
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['confirmar_pedido'])) {
     try {
-        // 1. Reducir el stock de los productos
-        $resultadoStock = $carritoController->reduceStock($idUsuario);
-
-        if ($resultadoStock['success']) {
-            // Generar número de pedido
-            $numeroPedido = "PED-" . date('Ymd') . "-" . rand(1000, 9999);
-
+        // Obtener los items del carrito antes de cualquier operación
+        $cartItems = $carritoController->getCart($idUsuario);
+        if (empty($cartItems)) {
+            $mensaje = "No hay productos en el carrito para completar el pedido";
+            $tipoMensaje = 'error';
+        } else {
             // Calcular el total del carrito
             $cartTotal = $carritoController->getCartTotal($idUsuario);
 
-            // 2. Guardar el pedido y sus detalles en la base de datos
+            // Generar número de pedido
+            $numeroPedido = "PED-" . date('Ymd') . "-" . rand(1000, 9999);
+
+            // Mostrar información detallada de debug
+            error_log("Items en carrito para procesar: " . print_r($cartItems, true));
+
+            // 1. Guardar el pedido y sus detalles
             $resultadoPedido = $pedidoController->savePedido($idUsuario, $numeroPedido, $cartItems, $cartTotal);
 
             if ($resultadoPedido['success']) {
-                // 3. Vaciar el carrito después de completar el pedido
-                $carritoController->clearCart($idUsuario);
+                // 2. Reducir stock
+                $resultadoStock = $carritoController->reduceStock($idUsuario);
 
-                // Registrar mensaje de éxito para debugging
-                error_log("Pedido completado exitosamente: " . $numeroPedido);
+                if (!$resultadoStock['success']) {
+                    error_log("Advertencia: No se pudo reducir el stock: " . ($resultadoStock['message'] ?? 'Error desconocido'));
+                }
 
-                // Redirigir a la página de agradecimiento con el número de pedido
-                header("Location: gracias.php?pedido=" . urlencode($numeroPedido));
+                // 3. Vaciar el carrito (incluso si hubo error en el stock)
+                $resultadoVaciar = $carritoController->clearCart($idUsuario);
+
+                if (!$resultadoVaciar['success']) {
+                    error_log("Advertencia: No se pudo vaciar el carrito: " . ($resultadoVaciar['message'] ?? 'Error desconocido'));
+                }
+
+                // Almacenar en sesión
+                $_SESSION['pedido_completado'] = true;
+                $_SESSION['numero_pedido'] = $numeroPedido;
+                $_SESSION['total_pedido'] = $cartTotal;
+
+                // Redirigir a página de agradecimiento
+                echo "<script>
+                    console.log('Pedido completado exitosamente. Redirigiendo...');
+                    window.location.href = 'gracias.php?pedido=" . urlencode($numeroPedido) . "';
+                </script>";
                 exit();
             } else {
-                // Si hay error al guardar el pedido, mostrar mensaje
                 $mensaje = $resultadoPedido['message'];
                 $tipoMensaje = 'error';
                 error_log("Error al guardar pedido: " . $mensaje);
             }
-        } else {
-            // Si hay error con el stock, mostrar mensaje
-            $mensaje = $resultadoStock['message'];
-            $tipoMensaje = 'error';
-            error_log("Error con el stock: " . $mensaje);
         }
     } catch (Exception $e) {
         $mensaje = "Error inesperado: " . $e->getMessage();
         $tipoMensaje = 'error';
-        error_log("Exception en checkout: " . $e->getMessage());
+        error_log("Exception en checkout: " . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 }
 
