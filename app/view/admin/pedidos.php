@@ -50,6 +50,215 @@ if (isset($_GET['mensaje']) && isset($_GET['tipo'])) {
     <link rel="stylesheet" href="../css/home.css">
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Estilos mejorados para filtros */
+        .search-filter {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+
+        .filter-group select,
+        .filter-group input[type="date"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .filter-group select:focus,
+        .filter-group input[type="date"]:focus {
+            border-color: #2e294e;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(46, 41, 78, 0.1);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+            align-self: flex-end;
+        }
+
+        .btn-filter {
+            background-color: #2e294e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+
+        .btn-filter:hover {
+            background-color: #3d366a;
+        }
+
+        .btn-clear {
+            background-color: #f8f9fa;
+            color: #444;
+            border: 1px solid #ddd;
+            padding: 10px 20px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-clear:hover {
+            background-color: #e9ecef;
+            border-color: #bbb;
+        }
+
+        .filter-title {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #2e294e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-title i {
+            font-size: 14px;
+        }
+
+        /* Estilos para la tabla */
+        .admin-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .admin-table th {
+            background-color: #2e294e;
+            color: white;
+            text-align: left;
+            padding: 15px;
+            font-weight: 500;
+        }
+
+        .admin-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .admin-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .admin-table tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+
+        .admin-table tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .estado-pendiente {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .estado-procesando {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .estado-enviado {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .estado-entregado {
+            background-color: #c3e6cb;
+            color: #0a3622;
+        }
+
+        .estado-cancelado {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Estilos mejorados para el botón de acciones */
+        .btn-view {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background-color: #2e294e;
+            color: white;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-view:hover {
+            background-color: #3d366a;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(46, 41, 78, 0.2);
+        }
+
+        .btn-view:active {
+            transform: translateY(0);
+            box-shadow: none;
+        }
+
+        .btn-view i {
+            font-size: 16px;
+        }
+
+        .actions {
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* Estilos para la paginación (futura implementación) */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+    </style>
 </head>
 
 <body>
@@ -100,13 +309,14 @@ if (isset($_GET['mensaje']) && isset($_GET['tipo'])) {
 
             <div class="admin-content">
                 <div class="search-filter">
+                    <h3 class="filter-title"><i class="fas fa-filter"></i> Filtrar pedidos</h3>
                     <form action="" method="get" class="filter-form">
                         <div class="filter-group">
-                            <label for="estado">Estado:</label>
+                            <label for="estado">Estado del pedido:</label>
                             <select id="estado" name="estado">
                                 <option value="">Todos los estados</option>
                                 <?php foreach ($estados as $estado): ?>
-                                    <option value="<?php echo $estado; ?>" <?php echo (isset($filtros['estado']) && $filtros['estado'] == $estado) ? 'selected' : ''; ?>>
+                                    <option value="<?php echo $estado; ?>" <?php echo (isset($_GET['estado']) && $_GET['estado'] == $estado) ? 'selected' : ''; ?>>
                                         <?php echo ucfirst($estado); ?>
                                     </option>
                                 <?php endforeach; ?>
@@ -114,26 +324,37 @@ if (isset($_GET['mensaje']) && isset($_GET['tipo'])) {
                         </div>
 
                         <div class="filter-group">
-                            <label for="fecha_desde">Desde:</label>
+                            <label for="fecha_desde"><i class="far fa-calendar-alt"></i> Desde fecha:</label>
                             <input type="date" id="fecha_desde" name="fecha_desde" value="<?php echo $filtros['fecha_desde'] ?? ''; ?>">
                         </div>
 
                         <div class="filter-group">
-                            <label for="fecha_hasta">Hasta:</label>
+                            <label for="fecha_hasta"><i class="far fa-calendar-alt"></i> Hasta fecha:</label>
                             <input type="date" id="fecha_hasta" name="fecha_hasta" value="<?php echo $filtros['fecha_hasta'] ?? ''; ?>">
                         </div>
 
                         <div class="filter-buttons">
-                            <button type="submit" class="btn-filter">Filtrar</button>
-                            <a href="pedidos.php" class="btn-clear">Limpiar</a>
+                            <button type="submit" class="btn-filter"><i class="fas fa-search"></i> Aplicar filtros</button>
+                            <a href="pedidos.php" class="btn-clear"><i class="fas fa-times"></i> Limpiar</a>
                         </div>
                     </form>
                 </div>
+
+                <!-- Información de resultados -->
+                <?php if (!empty($pedidos)): ?>
+                    <div style="margin-bottom: 15px; color: #666;">
+                        Mostrando <?php echo count($pedidos); ?> pedido(s)
+                        <?php if (!empty($filtros)): ?>
+                            con los filtros aplicados
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
 
                 <table class="admin-table">
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Número Pedido</th>
                             <th>Fecha</th>
                             <th>Cliente</th>
                             <th>Total</th>
@@ -144,14 +365,20 @@ if (isset($_GET['mensaje']) && isset($_GET['tipo'])) {
                     <tbody>
                         <?php if (empty($pedidos)): ?>
                             <tr>
-                                <td colspan="6" class="no-results">No hay pedidos disponibles</td>
+                                <td colspan="7" class="no-results">No hay pedidos disponibles</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($pedidos as $pedido): ?>
                                 <tr>
-                                    <td><?php echo $pedido['id']; ?></td>
+                                    <td><?php echo $pedido['ID_Pedido']; ?></td>
+                                    <td><?php echo $pedido['numero_pedido']; ?></td>
                                     <td><?php echo date('d/m/Y H:i', strtotime($pedido['fecha'])); ?></td>
-                                    <td><?php echo htmlspecialchars($pedido['nombre'] . ' ' . $pedido['apellidos']); ?> (<?php echo htmlspecialchars($pedido['email']); ?>)</td>
+                                    <td>
+                                        <?php echo htmlspecialchars($pedido['nombre'] . ' ' . $pedido['apellidos']); ?>
+                                        <?php if (isset($pedido['email'])): ?>
+                                            (<?php echo htmlspecialchars($pedido['email']); ?>)
+                                        <?php endif; ?>
+                                    </td>
                                     <td><?php echo number_format($pedido['total'], 2); ?>€</td>
                                     <td>
                                         <span class="badge estado-<?php echo $pedido['estado']; ?>">
@@ -159,8 +386,10 @@ if (isset($_GET['mensaje']) && isset($_GET['tipo'])) {
                                         </span>
                                     </td>
                                     <td class="actions">
-                                        <a href="pedido_detalle.php?id=<?php echo $pedido['id']; ?>" class="btn-view" title="Ver detalles">
-                                            <i class="fas fa-eye"></i>
+                                        <a href="pedido_detalle.php?id=<?php echo $pedido['ID_Pedido']; ?>"
+                                            class="btn-view"
+                                            title="Ver detalles del pedido <?php echo $pedido['numero_pedido']; ?>">
+                                            <i class="fas fa-eye"></i> Ver
                                         </a>
                                     </td>
                                 </tr>
@@ -237,6 +466,23 @@ if (isset($_GET['mensaje']) && isset($_GET['tipo'])) {
                 }, 5000);
             }
         });
+
+        // Función para verificar y redirigir a la página de detalles del pedido
+        function verDetallePedido(idPedido) {
+            // Validar que el ID existe
+            if (!idPedido) {
+                alert('Error: No se pudo identificar el pedido');
+                return false;
+            }
+
+            console.log('Redirigiendo a detalles del pedido ID: ' + idPedido);
+
+            // Aquí puedes agregar alguna lógica adicional si es necesario
+            // Por ejemplo, mostrar un indicador de carga
+
+            // La redirección se realiza automáticamente por el enlace
+            return true;
+        }
     </script>
 </body>
 

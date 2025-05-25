@@ -13,55 +13,72 @@ if (!isset($_SESSION['usuario']) || !isset($_SESSION['admin']) || $_SESSION['adm
 require_once "../../controller/admin/PedidosAdminController.php";
 require_once "../../controller/admin/UsuariosAdminController.php";
 
-$pedidosController = new PedidosAdminController();
-$usuariosController = new UsuariosAdminController();
+// Inicializar controladores con manejo de errores
+try {
+    $pedidosController = new PedidosAdminController();
+    $usuariosController = new UsuariosAdminController();
 
-$nombreUsuario = $_SESSION['usuario'];
+    $nombreUsuario = $_SESSION['usuario'];
 
-// Obtener estadísticas de ventas
-$periodo = isset($_GET['periodo']) ? $_GET['periodo'] : 'mes';
-$ventasEstadisticas = $pedidosController->getEstadisticasVentas($periodo);
-$productosMasVendidos = $pedidosController->getProductosMasVendidos(5);
-$usuariosEstadisticas = $usuariosController->getUsuariosEstadisticas($periodo);
+    // Obtener estadísticas de ventas
+    $periodo = isset($_GET['periodo']) ? $_GET['periodo'] : 'mes';
+    $ventasEstadisticas = $pedidosController->getEstadisticasVentas($periodo);
+    $productosMasVendidos = $pedidosController->getProductosMasVendidos(5);
+    $usuariosEstadisticas = $usuariosController->getUsuariosEstadisticas($periodo);
 
-// Preparar datos para gráficos
-$ventasLabels = [];
-$ventasData = [];
-$ventasPedidos = [];
+    // Preparar datos para gráficos
+    $ventasLabels = [];
+    $ventasData = [];
+    $ventasPedidos = [];
 
-foreach ($ventasEstadisticas as $estadistica) {
-    $ventasLabels[] = $estadistica['periodo'];
-    $ventasData[] = $estadistica['ventas'];
-    $ventasPedidos[] = $estadistica['num_pedidos'];
+    foreach ($ventasEstadisticas as $estadistica) {
+        $ventasLabels[] = $estadistica['periodo'];
+        $ventasData[] = $estadistica['ventas'];
+        $ventasPedidos[] = $estadistica['num_pedidos'];
+    }
+
+    $ventasLabelsJSON = json_encode($ventasLabels);
+    $ventasDataJSON = json_encode($ventasData);
+    $ventasPedidosJSON = json_encode($ventasPedidos);
+
+    // Datos para gráfico de productos más vendidos
+    $productoLabels = [];
+    $productoData = [];
+    $colores = [
+        'rgba(255, 99, 132, 0.7)',
+        'rgba(54, 162, 235, 0.7)',
+        'rgba(255, 206, 86, 0.7)',
+        'rgba(75, 192, 192, 0.7)',
+        'rgba(153, 102, 255, 0.7)'
+    ];
+
+    foreach ($productosMasVendidos as $index => $producto) {
+        $productoLabels[] = $producto['nombre_producto'];
+        $productoData[] = $producto['total_vendido'];
+    }
+
+    $productoLabelsJSON = json_encode($productoLabels);
+    $productoDataJSON = json_encode($productoData);
+    $coloresJSON = json_encode($colores);
+
+    // Calcular totales
+    $totalVentas = array_sum($ventasData);
+    $totalPedidos = array_sum($ventasPedidos);
+
+    // Mensaje de estado
+    $errorMsg = '';
+} catch (Exception $e) {
+    // En caso de error, guardar mensaje y configurar arrays vacíos
+    $errorMsg = "Error al cargar estadísticas: " . $e->getMessage();
+    $ventasLabelsJSON = json_encode([]);
+    $ventasDataJSON = json_encode([]);
+    $ventasPedidosJSON = json_encode([]);
+    $productoLabelsJSON = json_encode([]);
+    $productoDataJSON = json_encode([]);
+    $coloresJSON = json_encode([]);
+    $totalVentas = 0;
+    $totalPedidos = 0;
 }
-
-$ventasLabelsJSON = json_encode($ventasLabels);
-$ventasDataJSON = json_encode($ventasData);
-$ventasPedidosJSON = json_encode($ventasPedidos);
-
-// Datos para gráfico de productos más vendidos
-$productoLabels = [];
-$productoData = [];
-$colores = [
-    'rgba(255, 99, 132, 0.7)',
-    'rgba(54, 162, 235, 0.7)',
-    'rgba(255, 206, 86, 0.7)',
-    'rgba(75, 192, 192, 0.7)',
-    'rgba(153, 102, 255, 0.7)'
-];
-
-foreach ($productosMasVendidos as $index => $producto) {
-    $productoLabels[] = $producto['nombre_producto'];
-    $productoData[] = $producto['total_vendido'];
-}
-
-$productoLabelsJSON = json_encode($productoLabels);
-$productoDataJSON = json_encode($productoData);
-$coloresJSON = json_encode($colores);
-
-// Calcular totales
-$totalVentas = array_sum($ventasData);
-$totalPedidos = array_sum($ventasPedidos);
 ?>
 
 <!DOCTYPE html>
@@ -181,6 +198,15 @@ $totalPedidos = array_sum($ventasPedidos);
             color: #6c757d;
         }
 
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
         @media (max-width: 992px) {
             .stats-charts {
                 grid-template-columns: 1fr;
@@ -229,6 +255,12 @@ $totalPedidos = array_sum($ventasPedidos);
                     </a>
                 </div>
             </div>
+
+            <?php if (!empty($errorMsg)): ?>
+                <div class="error-message">
+                    <?php echo htmlspecialchars($errorMsg); ?>
+                </div>
+            <?php endif; ?>
 
             <div class="admin-content">
                 <div class="stats-header">
@@ -331,90 +363,100 @@ $totalPedidos = array_sum($ventasPedidos);
             });
 
             // Gráfico de evolución de ventas
-            <?php if (count($ventasLabels) > 0): ?>
-                const ventasCtx = document.getElementById('ventasChart').getContext('2d');
-                const ventasChart = new Chart(ventasCtx, {
-                    type: 'line',
-                    data: {
-                        labels: <?php echo $ventasLabelsJSON; ?>,
-                        datasets: [{
-                                label: 'Ventas (€)',
-                                data: <?php echo $ventasDataJSON; ?>,
-                                borderColor: '#2e294e',
-                                backgroundColor: 'rgba(46, 41, 78, 0.1)',
-                                borderWidth: 2,
-                                tension: 0.3,
-                                fill: true
-                            },
-                            {
-                                label: 'Número de pedidos',
-                                data: <?php echo $ventasPedidosJSON; ?>,
-                                borderColor: '#e63946',
-                                backgroundColor: 'transparent',
-                                borderWidth: 2,
-                                borderDash: [5, 5],
-                                tension: 0.3,
-                                yAxisID: 'y1'
-                            }
-                        ]
-                    },
-                    options: {
-                        responsive: true,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Ventas (€)'
-                                }
-                            },
-                            y1: {
-                                beginAtZero: true,
-                                position: 'right',
-                                grid: {
-                                    drawOnChartArea: false
+            <?php if (count($ventasLabels ?? []) > 0): ?>
+                try {
+                    const ventasCtx = document.getElementById('ventasChart').getContext('2d');
+                    const ventasChart = new Chart(ventasCtx, {
+                        type: 'line',
+                        data: {
+                            labels: <?php echo $ventasLabelsJSON; ?>,
+                            datasets: [{
+                                    label: 'Ventas (€)',
+                                    data: <?php echo $ventasDataJSON; ?>,
+                                    borderColor: '#2e294e',
+                                    backgroundColor: 'rgba(46, 41, 78, 0.1)',
+                                    borderWidth: 2,
+                                    tension: 0.3,
+                                    fill: true
                                 },
-                                title: {
-                                    display: true,
-                                    text: 'Pedidos'
+                                {
+                                    label: 'Número de pedidos',
+                                    data: <?php echo $ventasPedidosJSON; ?>,
+                                    borderColor: '#e63946',
+                                    backgroundColor: 'transparent',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    tension: 0.3,
+                                    yAxisID: 'y1'
                                 }
-                            }
-                        }
-                    }
-                });
-            <?php endif; ?>
-
-            // Gráfico de productos más vendidos
-            <?php if (count($productoLabels) > 0): ?>
-                const productosCtx = document.getElementById('productosChart').getContext('2d');
-                const productosChart = new Chart(productosCtx, {
-                    type: 'pie',
-                    data: {
-                        labels: <?php echo $productoLabelsJSON; ?>,
-                        datasets: [{
-                            data: <?php echo $productoDataJSON; ?>,
-                            backgroundColor: <?php echo $coloresJSON; ?>,
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        const label = context.label || '';
-                                        const value = context.raw || 0;
-                                        return `${label}: ${value} unidades`;
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Ventas (€)'
+                                    }
+                                },
+                                y1: {
+                                    beginAtZero: true,
+                                    position: 'right',
+                                    grid: {
+                                        drawOnChartArea: false
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Pedidos'
                                     }
                                 }
                             }
                         }
-                    }
-                });
+                    });
+                } catch (error) {
+                    console.error('Error al cargar gráfico de ventas:', error);
+                    document.getElementById('ventasChart').innerHTML = '<p class="no-data">Error al cargar el gráfico</p>';
+                }
+            <?php endif; ?>
+
+            // Gráfico de productos más vendidos
+            <?php if (count($productoLabels ?? []) > 0): ?>
+                try {
+                    const productosCtx = document.getElementById('productosChart').getContext('2d');
+                    const productosChart = new Chart(productosCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: <?php echo $productoLabelsJSON; ?>,
+                            datasets: [{
+                                data: <?php echo $productoDataJSON; ?>,
+                                backgroundColor: <?php echo $coloresJSON; ?>,
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || '';
+                                            const value = context.raw || 0;
+                                            return `${label}: ${value} unidades`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error al cargar gráfico de productos:', error);
+                    document.getElementById('productosChart').innerHTML = '<p class="no-data">Error al cargar el gráfico</p>';
+                }
             <?php endif; ?>
         });
     </script>

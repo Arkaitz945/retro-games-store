@@ -2,17 +2,23 @@
 
 require_once "../model/CarritoModel.php";
 require_once "../model/JuegosModel.php";
+require_once "../model/ConsolasModel.php";
+require_once "../model/RevistasModel.php"; // Añadir modelo de revistas
 require_once "../config/dbConnection.php"; // Actualizar a la ruta correcta
 
 class CarritoController
 {
     private $carritoModel;
     private $juegosModel;
+    private $consolasModel;
+    private $revistasModel; // Añadir propiedad para el modelo de revistas
 
     public function __construct()
     {
         $this->carritoModel = new CarritoModel();
         $this->juegosModel = new JuegosModel();
+        $this->consolasModel = new ConsolasModel();
+        $this->revistasModel = new RevistasModel(); // Inicializar modelo de revistas
     }
 
     /**
@@ -37,21 +43,30 @@ class CarritoController
      */
     public function addToCart($idUsuario, $tipoProducto, $productoId, $cantidad = 1)
     {
-        // Por ahora, solo manejamos juegos ya que es el único modelo que tenemos implementado
-        if ($tipoProducto != 'juego') {
-            return [
-                'success' => false,
-                'message' => 'Actualmente solo se pueden añadir juegos al carrito'
-            ];
-        }
+        // Verificar qué tipo de producto es y obtener sus datos
+        $producto = null;
 
-        // Verificar que el juego existe y tiene stock
-        $producto = $this->juegosModel->getJuegoById($productoId);
+        switch ($tipoProducto) {
+            case 'juego':
+                $producto = $this->juegosModel->getJuegoById($productoId);
+                break;
+            case 'consola':
+                $producto = $this->consolasModel->getConsolaById($productoId);
+                break;
+            case 'revista':
+                $producto = $this->revistasModel->getRevistaById($productoId);
+                break;
+            default:
+                return [
+                    'success' => false,
+                    'message' => 'Tipo de producto no soportado'
+                ];
+        }
 
         if (!$producto) {
             return [
                 'success' => false,
-                'message' => 'El juego no existe'
+                'message' => 'El producto no existe'
             ];
         }
 

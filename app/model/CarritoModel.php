@@ -1,6 +1,6 @@
 <?php
 
-require_once "../../config/dbConnection.php";
+require_once __DIR__ . "/../../config/dbConnection.php";
 
 class CarritoModel
 {
@@ -24,6 +24,15 @@ class CarritoModel
     public function getCartItems($idUsuario)
     {
         try {
+            // Verificar que el ID de usuario es válido
+            if (!$idUsuario || !is_numeric($idUsuario)) {
+                error_log("CarritoModel: ID de usuario inválido para obtener carrito");
+                return [];
+            }
+
+            // Log para depuración
+            error_log("Obteniendo items del carrito para usuario ID: " . $idUsuario);
+
             // Consultamos primero los items del carrito
             $query = "SELECT c.ID_Carrito, c.tipo_producto, c.producto_id, c.cantidad 
                       FROM carrito c 
@@ -34,32 +43,89 @@ class CarritoModel
             $stmt->execute();
 
             $cartItems = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Log para depuración
+            error_log("Items encontrados en el carrito: " . count($cartItems));
+
+            if (empty($cartItems)) {
+                error_log("No se encontraron items en el carrito para el usuario ID: " . $idUsuario);
+                return [];
+            }
+
             $result = [];
 
-            // Para cada item, obtenemos la información del producto (actualmente solo juegos)
+            // Para cada item, obtenemos la información del producto según su tipo
             foreach ($cartItems as $item) {
-                if ($item['tipo_producto'] == 'juego') {
-                    // Obtener detalles del juego
-                    $queryJuego = "SELECT j.nombre, j.plataforma, j.precio, j.imagen, j.stock 
-                                   FROM juegos j 
-                                   WHERE j.ID_J = :productoId";
+                $producto = $this->getProductInfo($item['tipo_producto'], $item['producto_id']);
 
-                    $stmtJuego = $this->conn->prepare($queryJuego);
-                    $stmtJuego->bindParam(":productoId", $item['producto_id'], PDO::PARAM_INT);
-                    $stmtJuego->execute();
-
-                    if ($stmtJuego->rowCount() > 0) {
-                        $juego = $stmtJuego->fetch(PDO::FETCH_ASSOC);
-                        $result[] = array_merge($item, $juego);
-                    }
+                if ($producto) {
+                    // Si encontramos información del producto, lo añadimos al resultado
+                    $result[] = array_merge($item, $producto);
+                    error_log("Producto añadido al resultado del carrito: " . json_encode($producto));
+                } else {
+                    error_log("No se pudo obtener información del producto: tipo=" . $item['tipo_producto'] . ", id=" . $item['producto_id']);
                 }
-                // Aquí se pueden añadir más casos para otros tipos de productos cuando se implementen
             }
 
             return $result;
         } catch (PDOException $e) {
             error_log("Error obteniendo items del carrito: " . $e->getMessage());
             return [];
+        }
+    }
+
+    /**
+     * Obtener información detallada de un producto según su tipo
+     * 
+     * @param string $tipoProducto Tipo de producto (juego, consola, revista)
+     * @param int $productoId ID del producto
+     * @return array|false Información del producto o false si no se encuentra
+     */
+    private function getProductInfo($tipoProducto, $productoId)
+    {
+        try {
+            $query = "";
+            $params = [":productoId" => $productoId];
+
+            switch ($tipoProducto) {
+                case 'juego':
+                    $query = "SELECT nombre, plataforma, precio, imagen, stock 
+                              FROM juegos 
+                              WHERE ID_J = :productoId";
+                    break;
+
+                case 'consola':
+                    $query = "SELECT nombre, fabricante AS plataforma, precio, imagen, stock 
+                              FROM consolas 
+                              WHERE ID_Consola = :productoId";
+                    break;
+
+                case 'revista':
+                    $query = "SELECT nombre, editorial AS plataforma, precio, imagen, stock 
+                              FROM revistas 
+                              WHERE ID_Revista = :productoId";
+                    break;
+
+                default:
+                    error_log("Tipo de producto no soportado: " . $tipoProducto);
+                    return false;
+            }
+
+            $stmt = $this->conn->prepare($query);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value, is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR);
+            }
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            } else {
+                error_log("No se encontró el producto: tipo=" . $tipoProducto . ", id=" . $productoId);
+                return false;
+            }
+        } catch (PDOException $e) {
+            error_log("Error obteniendo información del producto: " . $e->getMessage());
+            return false;
         }
     }
 
@@ -126,7 +192,16 @@ class CarritoModel
                 $stmt->bindParam(":productoId", $productoId, PDO::PARAM_INT);
                 $stmt->bindParam(":cantidad", $cantidad, PDO::PARAM_INT);
 
-                return $stmt->execute();
+                $result = $stmt->execute();
+
+                // Log para depuración
+                if ($result) {
+                    error_log("Producto añadido al carrito: Usuario=$idUsuario, Tipo=$tipoProducto, ID=$productoId, Cantidad=$cantidad");
+                } else {
+                    error_log("Error al añadir producto al carrito: " . json_encode($stmt->errorInfo()));
+                }
+
+                return $result;
             }
         } catch (PDOException $e) {
             error_log("Error añadiendo item al carrito: " . $e->getMessage());

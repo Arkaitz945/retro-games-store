@@ -11,6 +11,7 @@ if (!isset($_SESSION['usuario']) || !isset($_SESSION['admin']) || $_SESSION['adm
 }
 
 require_once "../../controller/admin/PedidosAdminController.php";
+require_once "../../config/dbConnection.php";
 
 $pedidosController = new PedidosAdminController();
 $nombreUsuario = $_SESSION['usuario'];
@@ -18,19 +19,24 @@ $mensaje = '';
 $tipoMensaje = '';
 
 // Verificar si se proporciona un ID
-if (!isset($_GET['id'])) {
-    header("Location: pedidos.php");
+if (!isset($_GET['id']) || empty($_GET['id'])) {
+    header("Location: pedidos.php?mensaje=ID de pedido no proporcionado&tipo=error");
     exit();
 }
 
-$idPedido = $_GET['id'];
+$idPedido = intval($_GET['id']); // Asegurar que es un entero
+error_log("Accediendo a detalles del pedido ID: " . $idPedido);
+
+// Obtener el pedido
 $pedido = $pedidosController->getPedidoById($idPedido);
-$detalles = $pedidosController->getDetallesPedido($idPedido);
 
 if (!$pedido) {
-    header("Location: pedidos.php?mensaje=Pedido no encontrado&tipo=error");
+    header("Location: pedidos.php?mensaje=Pedido no encontrado (ID: $idPedido)&tipo=error");
     exit();
 }
+
+// Obtener los detalles del pedido
+$detalles = $pedidosController->getDetallesPedido($idPedido);
 
 // Actualizar estado del pedido
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
@@ -53,60 +59,95 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalle de Pedido #<?php echo $idPedido; ?> - Admin Panel</title>
+    <title>Detalle de Pedido #<?php echo $pedido['numero_pedido']; ?> - Admin Panel</title>
     <link rel="stylesheet" href="../css/home.css">
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .order-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
             margin-bottom: 30px;
         }
 
         .detail-card {
-            background-color: #f8f9fa;
-            padding: 20px;
+            background-color: #fff;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            flex: 1;
+            min-width: 300px;
         }
 
         .detail-card h3 {
-            margin-top: 0;
-            border-bottom: 1px solid #e9ecef;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
             color: #2e294e;
+            margin-top: 0;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
         }
 
         .detail-row {
             display: flex;
-            justify-content: space-between;
             margin-bottom: 10px;
         }
 
         .detail-label {
-            font-weight: 500;
-            color: #666;
+            font-weight: 600;
+            width: 140px;
+            color: #555;
         }
 
         .detail-value {
-            font-weight: 600;
+            flex: 1;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .estado-pendiente {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+
+        .estado-procesando {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+
+        .estado-enviado {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .estado-entregado {
+            background-color: #c3e6cb;
+            color: #0a3622;
+        }
+
+        .estado-cancelado {
+            background-color: #f8d7da;
+            color: #721c24;
         }
 
         .estado-form {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-top: 15px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
         }
 
         .estado-form select {
-            flex: 1;
             padding: 8px;
             border-radius: 4px;
             border: 1px solid #ddd;
+            margin-right: 10px;
         }
 
         .btn-update-status {
@@ -132,7 +173,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
         .products-table td {
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid #e9ecef;
+            border-bottom: 1px solid #eee;
         }
 
         .products-table th {
@@ -140,76 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
             font-weight: 600;
         }
 
-        .product-type {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            text-transform: uppercase;
-        }
-
-        .type-juego {
-            background-color: #d1e7dd;
-            color: #0f5132;
-        }
-
-        .type-consola {
-            background-color: #cfe2ff;
-            color: #084298;
-        }
-
-        .type-revista {
-            background-color: #fff3cd;
-            color: #664d03;
-        }
-
         .total-row {
-            font-weight: bold;
-            background-color: #f8f9fa;
-        }
-
-        .total-row td {
-            border-top: 2px solid #2e294e;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-
-        .estado-pendiente {
-            background-color: #fff3cd;
-            color: #664d03;
-        }
-
-        .estado-procesando {
-            background-color: #cfe2ff;
-            color: #084298;
-        }
-
-        .estado-enviado {
-            background-color: #d1e7dd;
-            color: #0f5132;
-        }
-
-        .estado-entregado {
-            background-color: #d1e7dd;
-            color: #0f5132;
-        }
-
-        .estado-cancelado {
-            background-color: #f8d7da;
-            color: #842029;
-        }
-
-        @media (max-width: 768px) {
-            .order-details {
-                grid-template-columns: 1fr;
-            }
+            font-weight: 700;
         }
     </style>
 </head>
@@ -247,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
         <div class="admin-container">
             <div class="admin-header">
                 <div class="admin-header-left">
-                    <h1>Detalle de Pedido #<?php echo $idPedido; ?></h1>
+                    <h1>Detalle de Pedido #<?php echo $pedido['numero_pedido']; ?></h1>
                     <a href="pedidos.php" class="btn-back">
                         <i class="fas fa-arrow-left"></i> Volver a pedidos
                     </a>
@@ -265,8 +238,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
                     <div class="detail-card">
                         <h3>Información del Pedido</h3>
                         <div class="detail-row">
+                            <span class="detail-label">ID:</span>
+                            <span class="detail-value">#<?php echo $pedido['ID_Pedido']; ?></span>
+                        </div>
+                        <div class="detail-row">
                             <span class="detail-label">Número de Pedido:</span>
-                            <span class="detail-value">#<?php echo $pedido['id']; ?></span>
+                            <span class="detail-value"><?php echo $pedido['numero_pedido']; ?></span>
                         </div>
                         <div class="detail-row">
                             <span class="detail-label">Fecha:</span>
@@ -287,14 +264,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
 
                         <!-- Formulario para cambiar el estado -->
                         <form method="post" class="estado-form">
-                            <select name="nuevo_estado" id="nuevo_estado">
-                                <option value="pendiente" <?php echo ($pedido['estado'] == 'pendiente') ? 'selected' : ''; ?>>Pendiente</option>
-                                <option value="procesando" <?php echo ($pedido['estado'] == 'procesando') ? 'selected' : ''; ?>>Procesando</option>
-                                <option value="enviado" <?php echo ($pedido['estado'] == 'enviado') ? 'selected' : ''; ?>>Enviado</option>
-                                <option value="entregado" <?php echo ($pedido['estado'] == 'entregado') ? 'selected' : ''; ?>>Entregado</option>
-                                <option value="cancelado" <?php echo ($pedido['estado'] == 'cancelado') ? 'selected' : ''; ?>>Cancelado</option>
-                            </select>
-                            <button type="submit" class="btn-update-status">Actualizar Estado</button>
+                            <div class="form-group">
+                                <label for="nuevo_estado">Cambiar estado:</label>
+                                <select name="nuevo_estado" id="nuevo_estado" class="estado-select">
+                                    <option value="pendiente" <?php echo ($pedido['estado'] == 'pendiente') ? 'selected' : ''; ?>>Pendiente</option>
+                                    <option value="procesando" <?php echo ($pedido['estado'] == 'procesando') ? 'selected' : ''; ?>>Procesando</option>
+                                    <option value="enviado" <?php echo ($pedido['estado'] == 'enviado') ? 'selected' : ''; ?>>Enviado</option>
+                                    <option value="entregado" <?php echo ($pedido['estado'] == 'entregado') ? 'selected' : ''; ?>>Entregado</option>
+                                    <option value="cancelado" <?php echo ($pedido['estado'] == 'cancelado') ? 'selected' : ''; ?>>Cancelado</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-update-status">
+                                <i class="fas fa-save"></i> Actualizar Estado
+                            </button>
+                            <input type="hidden" name="id_pedido" value="<?php echo $pedido['ID_Pedido']; ?>">
+                            <input type="hidden" name="action" value="update_estado">
                         </form>
                     </div>
 
@@ -308,50 +292,72 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
                             <span class="detail-label">Email:</span>
                             <span class="detail-value"><?php echo htmlspecialchars($pedido['email']); ?></span>
                         </div>
-                        <?php if (!empty($pedido['telefono'])): ?>
+                        <?php if (isset($pedido['telefono']) && !empty($pedido['telefono'])): ?>
                             <div class="detail-row">
                                 <span class="detail-label">Teléfono:</span>
                                 <span class="detail-value"><?php echo htmlspecialchars($pedido['telefono']); ?></span>
                             </div>
                         <?php endif; ?>
+
+                        <!-- Aquí estaba el error: ahora verificamos si existe la clave 'direccion' -->
                         <div class="detail-row">
                             <span class="detail-label">Dirección:</span>
-                            <span class="detail-value"><?php echo htmlspecialchars($pedido['direccion'] ?: 'No disponible'); ?></span>
+                            <span class="detail-value">
+                                <?php
+                                if (isset($pedido['direccion']) && !empty($pedido['direccion'])) {
+                                    echo htmlspecialchars($pedido['direccion']);
+                                } else {
+                                    echo 'No disponible';
+                                }
+                                ?>
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                <h3>Productos</h3>
-                <table class="products-table">
-                    <thead>
-                        <tr>
-                            <th>Producto</th>
-                            <th>Tipo</th>
-                            <th>Precio</th>
-                            <th>Cantidad</th>
-                            <th>Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($detalles as $detalle): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($detalle['nombre_producto']); ?></td>
-                                <td>
-                                    <span class="product-type type-<?php echo $detalle['tipo_producto']; ?>">
-                                        <?php echo ucfirst($detalle['tipo_producto']); ?>
-                                    </span>
-                                </td>
-                                <td><?php echo number_format($detalle['precio'], 2); ?>€</td>
-                                <td><?php echo $detalle['cantidad']; ?></td>
-                                <td><?php echo number_format($detalle['precio'] * $detalle['cantidad'], 2); ?>€</td>
-                            </tr>
-                        <?php endforeach; ?>
-                        <tr class="total-row">
-                            <td colspan="4" style="text-align: right;">Total:</td>
-                            <td><?php echo number_format($pedido['total'], 2); ?>€</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="detail-card">
+                    <h3>Productos</h3>
+
+                    <?php if (empty($detalles)): ?>
+                        <p>No hay productos disponibles para este pedido.</p>
+                    <?php else: ?>
+                        <table class="products-table">
+                            <thead>
+                                <tr>
+                                    <th>Producto</th>
+                                    <th>Tipo</th>
+                                    <th>Precio</th>
+                                    <th>Cantidad</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($detalles as $detalle): ?>
+                                    <tr>
+                                        <td><?php echo htmlspecialchars($detalle['nombre_producto']); ?></td>
+                                        <td>
+                                            <?php
+                                            $tipos = [
+                                                'juego' => 'Videojuego',
+                                                'consola' => 'Consola',
+                                                'revista' => 'Revista'
+                                            ];
+                                            echo $tipos[$detalle['tipo_producto']] ?? ucfirst($detalle['tipo_producto']);
+                                            ?>
+                                        </td>
+                                        <td><?php echo number_format($detalle['precio'], 2); ?>€</td>
+                                        <td><?php echo $detalle['cantidad']; ?></td>
+                                        <td><?php echo number_format($detalle['precio'] * $detalle['cantidad'], 2); ?>€</td>
+                                    </tr>
+                                <?php endforeach; ?>
+                                <tr class="total-row">
+                                    <td colspan="4" style="text-align: right;">Total:</td>
+                                    <td><?php echo number_format($pedido['total'], 2); ?>€</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </main>
@@ -374,7 +380,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
     <script>
         // JavaScript para el menú desplegable
         document.addEventListener('DOMContentLoaded', function() {
-            // Menú desplegable
             const userBtn = document.querySelector('.user-btn');
             const dropdownContent = document.querySelector('.dropdown-content');
 
@@ -399,6 +404,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuevo_estado'])) {
                         alertMessage.remove();
                     }, 500);
                 }, 5000);
+            }
+
+            // Mejorar el manejo del formulario de actualización de estado
+            const estadoForm = document.querySelector('.estado-form');
+
+            if (estadoForm) {
+                estadoForm.addEventListener('submit', function(e) {
+                    // No prevenir el envío del formulario, pero podemos añadir validación si es necesario
+
+                    // Mostrar indicador de carga
+                    const submitButton = this.querySelector('.btn-update-status');
+                    const originalButtonText = submitButton.innerHTML;
+                    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Actualizando...';
+                    submitButton.disabled = true;
+
+                    // Continuar con el envío del formulario
+                });
             }
         });
     </script>

@@ -384,4 +384,44 @@ class UsuariosModel
             ];
         }
     }
+
+    /**
+     * Obtener estadísticas de usuarios
+     * 
+     * @param string $periodo Periodo de tiempo (dia, mes, anio)
+     * @return array Datos de estadísticas
+     */
+    public function getUsuariosEstadisticas($periodo = 'mes')
+    {
+        try {
+            if ($periodo === 'dia') {
+                $query = "SELECT DATE_FORMAT(fecha_registro, '%Y-%m-%d') as periodo, 
+                        COUNT(*) as nuevos_usuarios 
+                        FROM usuarios 
+                        WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) 
+                        GROUP BY DATE_FORMAT(fecha_registro, '%Y-%m-%d') 
+                        ORDER BY periodo";
+            } else if ($periodo === 'mes') {
+                $query = "SELECT DATE_FORMAT(fecha_registro, '%Y-%m') as periodo, 
+                        COUNT(*) as nuevos_usuarios 
+                        FROM usuarios 
+                        WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH) 
+                        GROUP BY DATE_FORMAT(fecha_registro, '%Y-%m') 
+                        ORDER BY periodo";
+            } else {
+                $query = "SELECT DATE_FORMAT(fecha_registro, '%Y') as periodo, 
+                        COUNT(*) as nuevos_usuarios 
+                        FROM usuarios 
+                        GROUP BY DATE_FORMAT(fecha_registro, '%Y') 
+                        ORDER BY periodo";
+            }
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error obteniendo estadísticas de usuarios: " . $e->getMessage());
+            return [];
+        }
+    }
 }

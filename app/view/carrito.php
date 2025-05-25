@@ -4,6 +4,14 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 
+// Código de depuración - elimina o comenta esto en producción
+error_log("-------- Iniciando página de carrito --------");
+if (isset($_SESSION['id'])) {
+    error_log("Usuario logueado con ID: " . $_SESSION['id']);
+} else {
+    error_log("ALERTA: No hay usuario logueado con ID en la sesión");
+}
+
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['usuario'])) {
     header("Location: index.php");

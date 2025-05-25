@@ -24,9 +24,11 @@ class PedidosModel
     public function getAllPedidos($filtros = [])
     {
         try {
-            $query = "SELECT p.*, u.nombre, u.apellidos, u.email 
-                     FROM pedidos p 
-                     JOIN usuarios u ON p.id_usuario = u.id";
+            // Actualizado para usar los nombres correctos de las columnas
+            $query = "SELECT p.ID_Pedido, p.numero_pedido, p.id_usuario, p.fecha, p.total, p.estado, 
+                      u.nombre, u.apellidos, u.correo as email 
+                      FROM pedidos p 
+                      JOIN usuarios u ON p.id_usuario = u.ID_U";
 
             $condiciones = [];
             $params = [];
@@ -90,22 +92,30 @@ class PedidosModel
     public function getPedidoById($idPedido)
     {
         try {
-            $query = "SELECT p.*, u.nombre, u.apellidos, u.email, u.telefono, u.direccion 
+            // Añadir depuración
+            error_log("Buscando pedido con ID: " . $idPedido);
+
+            // Consulta simplificada para mejor depuración
+            $query = "SELECT p.*, u.nombre, u.apellidos, u.correo as email 
                      FROM pedidos p 
-                     JOIN usuarios u ON p.id_usuario = u.id 
-                     WHERE p.id = :idPedido";
+                     LEFT JOIN usuarios u ON p.id_usuario = u.ID_U 
+                     WHERE p.ID_Pedido = :idPedido";
 
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(":idPedido", $idPedido, PDO::PARAM_INT);
             $stmt->execute();
 
             if ($stmt->rowCount() > 0) {
-                return $stmt->fetch(PDO::FETCH_ASSOC);
+                $pedido = $stmt->fetch(PDO::FETCH_ASSOC);
+                error_log("Pedido encontrado: " . print_r($pedido, true));
+                return $pedido;
             }
 
+            error_log("No se encontró ningún pedido con ID: " . $idPedido);
             return false;
         } catch (PDOException $e) {
             error_log("Error obteniendo pedido por ID: " . $e->getMessage());
+            error_log("Traza: " . $e->getTraceAsString());
             return false;
         }
     }
@@ -119,6 +129,7 @@ class PedidosModel
     public function getDetallesPedido($idPedido)
     {
         try {
+            // Actualizado para usar los nombres correctos
             $query = "SELECT dp.*, 
                       COALESCE(j.nombre, c.nombre, r.titulo) as nombre_producto,
                       CASE 
@@ -147,19 +158,56 @@ class PedidosModel
      * Actualizar el estado de un pedido
      * 
      * @param int $idPedido ID del pedido
-     * @param string $estado Nuevo estado del pedido
-     * @return bool Resultado de la operación
+     * @param string $estado Nuevo estado
+     * @return bool True si se actualizó correctamente, false en caso contrario
      */
     public function updateEstadoPedido($idPedido, $estado)
     {
         try {
-            $query = "UPDATE pedidos SET estado = :estado WHERE id = :idPedido";
+            // Registrar la acción para depuración
+            error_log("Intentando actualizar pedido ID: $idPedido al estado: $estado");
+
+            // Validar estado permitido
+            $estadosPermitidos = ['pendiente', 'procesando', 'enviado', 'entregado', 'cancelado'];
+            if (!in_array(strtolower($estado), $estadosPermitidos)) {
+                error_log("Error: Estado no válido ($estado)");
+                return false;
+            }
+
+            // Actualizar usando el nombre correcto de la columna (ID_Pedido)
+            $query = "UPDATE pedidos SET estado = :estado WHERE ID_Pedido = :idPedido";
+
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":estado", $estado);
-            $stmt->bindParam(":idPedido", $idPedido, PDO::PARAM_INT);
-            return $stmt->execute();
+            $stmt->bindParam(':estado', $estado, PDO::PARAM_STR);
+            $stmt->bindParam(':idPedido', $idPedido, PDO::PARAM_INT);
+
+            $result = $stmt->execute();
+
+            // Verificar si hubo cambios
+            if ($result && $stmt->rowCount() > 0) {
+                error_log("Pedido ID: $idPedido actualizado correctamente al estado: $estado");
+                return true;
+            } else {
+                error_log("No se actualizó el pedido. ID: $idPedido, Estado: $estado, Resultado: " . ($result ? 'true' : 'false') . ", Filas afectadas: " . $stmt->rowCount());
+
+                // Verificar si el pedido existe
+                $checkQuery = "SELECT COUNT(*) as total FROM pedidos WHERE ID_Pedido = :idPedido";
+                $checkStmt = $this->conn->prepare($checkQuery);
+                $checkStmt->bindParam(':idPedido', $idPedido, PDO::PARAM_INT);
+                $checkStmt->execute();
+                $checkResult = $checkStmt->fetch(PDO::FETCH_ASSOC);
+
+                if ($checkResult['total'] == 0) {
+                    error_log("El pedido ID: $idPedido no existe en la base de datos");
+                } else {
+                    error_log("El pedido existe pero no se actualizó. Posiblemente ya tiene el mismo estado.");
+                }
+
+                return false;
+            }
         } catch (PDOException $e) {
-            error_log("Error actualizando estado del pedido: " . $e->getMessage());
+            error_log("Error al actualizar estado del pedido: " . $e->getMessage());
+            error_log("Traza: " . $e->getTraceAsString());
             return false;
         }
     }
@@ -252,6 +300,96 @@ class PedidosModel
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("Error obteniendo productos más vendidos: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Contar el número total de pedidos según filtros
+     * 
+     * @param array $filtros Filtros a aplicar
+     * @return int Número total de pedidos
+     */
+    public function countPedidos($filtros = [])
+    {
+        try {
+            $query = "SELECT COUNT(*) as total FROM pedidos p JOIN usuarios u ON p.id_usuario = u.id";
+
+            $condiciones = [];
+            $params = [];
+
+            // Aplicar filtros si existen
+            if (!empty($filtros)) {
+                // Filtro por estado
+                if (isset($filtros['estado']) && !empty($filtros['estado'])) {
+                    $condiciones[] = "p.estado = :estado";
+                    $params[':estado'] = $filtros['estado'];
+                }
+
+                // Filtro por fecha desde
+                if (isset($filtros['fecha_desde']) && !empty($filtros['fecha_desde'])) {
+                    $condiciones[] = "p.fecha >= :fecha_desde";
+                    $params[':fecha_desde'] = $filtros['fecha_desde'];
+                }
+
+                // Filtro por fecha hasta
+                if (isset($filtros['fecha_hasta']) && !empty($filtros['fecha_hasta'])) {
+                    $condiciones[] = "p.fecha <= :fecha_hasta";
+                    $params[':fecha_hasta'] = $filtros['fecha_hasta'];
+                }
+
+                // Filtro por usuario
+                if (isset($filtros['cliente']) && !empty($filtros['cliente'])) {
+                    $condiciones[] = "p.id_usuario = :id_usuario";
+                    $params[':id_usuario'] = $filtros['cliente'];
+                }
+
+                // Filtro por ID de pedido
+                if (isset($filtros['id_pedido']) && !empty($filtros['id_pedido'])) {
+                    $condiciones[] = "p.id = :id_pedido";
+                    $params[':id_pedido'] = $filtros['id_pedido'];
+                }
+
+                // Añadir condiciones a la consulta
+                if (!empty($condiciones)) {
+                    $query .= " WHERE " . implode(" AND ", $condiciones);
+                }
+            }
+
+            $stmt = $this->conn->prepare($query);
+
+            // Bind params
+            foreach ($params as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+
+            $stmt->execute();
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            return (int)$result['total'];
+        } catch (PDOException $e) {
+            error_log("Error contando pedidos: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Obtener la lista de clientes que han realizado pedidos
+     * 
+     * @return array Lista de clientes
+     */
+    public function getClientesConPedidos()
+    {
+        try {
+            $query = "SELECT DISTINCT u.id, u.nombre, u.apellidos
+                     FROM usuarios u
+                     JOIN pedidos p ON u.id = p.id_usuario
+                     ORDER BY u.nombre, u.apellidos";
+
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("Error obteniendo clientes con pedidos: " . $e->getMessage());
             return [];
         }
     }
