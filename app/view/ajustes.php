@@ -11,16 +11,19 @@ if (!isset($_SESSION['usuario'])) {
 }
 
 // Incluir controlador
-require_once "../controller/AjustesController.php";
+require_once "../controller/UsuarioController.php";
 
-$ajustesController = new AjustesController();
+$usuarioController = new UsuarioController();
 $idUsuario = $_SESSION['id'];
 $nombreUsuario = $_SESSION['usuario'];
 $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 
 // Obtener datos del usuario
-$usuario = $ajustesController->getUserById($idUsuario);
-$direccion = $ajustesController->getDireccionUsuario($idUsuario);
+$usuario = $usuarioController->getUserById($idUsuario);
+$direccion = $usuarioController->getDireccionUsuario($idUsuario);
+
+// Obtener todas las direcciones del usuario
+$direcciones = $usuarioController->getDireccionesUsuario($idUsuario);
 
 // Inicializar array de mensajes para diferentes formularios
 $mensajes = [
@@ -41,14 +44,14 @@ $tipoMensaje = null;
 // Procesar formularios
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Actualizar datos personales
-    if (isset($_POST['actualizar_datos'])) {
+    if (isset($_POST['actualizar_perfil'])) {  // Changed from actualizar_datos to actualizar_perfil
         $datos = [
             'nombre' => $_POST['nombre'],
             'apellidos' => $_POST['apellidos'],
-            'correo' => $_POST['correo']
+            'correo' => $_POST['correo'] ?? $usuario['correo'] // Use existing email if not provided
         ];
 
-        $resultado = $ajustesController->updateUser($idUsuario, $datos);
+        $resultado = $usuarioController->updateUser($idUsuario, $datos);
 
         if ($resultado) {
             $mensajes['datos']['tipo'] = 'success';
@@ -57,10 +60,34 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $_SESSION['usuario'] = $_POST['nombre'];
             $nombreUsuario = $_POST['nombre'];
             // Actualizar datos en la variable
-            $usuario = $ajustesController->getUserById($idUsuario);
+            $usuario = $usuarioController->getUserById($idUsuario);
         } else {
             $mensajes['datos']['tipo'] = 'error';
             $mensajes['datos']['texto'] = "Error al actualizar los datos";
+        }
+    }
+
+    // Actualizar correo
+    if (isset($_POST['actualizar_correo'])) {
+        $nuevoCorreo = $_POST['correo'];
+
+        // Verificar que el correo sea válido
+        if (!filter_var($nuevoCorreo, FILTER_VALIDATE_EMAIL)) {
+            $mensajes['correo']['tipo'] = 'error';
+            $mensajes['correo']['texto'] = "El correo electrónico no es válido";
+        } else {
+            $datos = ['correo' => $nuevoCorreo];
+            $resultado = $usuarioController->updateUser($idUsuario, $datos);
+
+            if ($resultado) {
+                $mensajes['correo']['tipo'] = 'success';
+                $mensajes['correo']['texto'] = "Correo actualizado correctamente";
+                // Actualizar datos en la variable
+                $usuario = $usuarioController->getUserById($idUsuario);
+            } else {
+                $mensajes['correo']['tipo'] = 'error';
+                $mensajes['correo']['texto'] = "Error al actualizar el correo. Puede que ya esté en uso.";
+            }
         }
     }
 
@@ -72,13 +99,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'codigoPostal' => $_POST['codigo_postal']
         ];
 
-        $resultadoDireccion = $ajustesController->updateDireccion($idUsuario, $datosDireccion);
+        $resultadoDireccion = $usuarioController->updateDireccion($idUsuario, $datosDireccion);
 
         if ($resultadoDireccion) {
             $mensajes['direccion']['tipo'] = 'success';
             $mensajes['direccion']['texto'] = "Dirección actualizada correctamente";
             // Actualizar datos en la variable
-            $direccion = $ajustesController->getDireccionUsuario($idUsuario);
+            $direccion = $usuarioController->getDireccionUsuario($idUsuario);
         } else {
             $mensajes['direccion']['tipo'] = 'error';
             $mensajes['direccion']['texto'] = "Error al actualizar la dirección";
@@ -86,16 +113,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Cambiar contraseña
-    if (isset($_POST['cambiar_password'])) {
-        $oldPassword = $_POST['password_actual'];
-        $newPassword = $_POST['password_nueva'];
-        $confirmPassword = $_POST['password_confirmar'];
+    if (isset($_POST['actualizar_password'])) {  // Changed from cambiar_password to actualizar_password
+        $oldPassword = $_POST['current_password'];  // Changed from password_actual to current_password
+        $newPassword = $_POST['new_password'];      // Changed from password_nueva to new_password
+        $confirmPassword = $_POST['confirm_password']; // Changed from password_confirmar to confirm_password
 
         if ($newPassword !== $confirmPassword) {
             $mensajes['password']['tipo'] = 'error';
             $mensajes['password']['texto'] = "Las contraseñas no coinciden";
         } else {
-            $resultadoPassword = $ajustesController->changePassword($idUsuario, $oldPassword, $newPassword);
+            $resultadoPassword = $usuarioController->changePassword($idUsuario, $oldPassword, $newPassword);
 
             if ($resultadoPassword['success']) {
                 $mensajes['password']['tipo'] = 'success';
@@ -107,6 +134,59 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
+    // Guardar nueva dirección o actualizar existente
+    if (isset($_POST['guardar_direccion'])) {
+        $datosDireccion = [
+            'calle' => $_POST['calle'],
+            'numero' => $_POST['numero'],
+            'codigoPostal' => $_POST['codigo_postal']
+        ];
+
+        // Si hay un ID de dirección, actualizar esa dirección específica
+        if (!empty($_POST['id_direccion'])) {
+            $idDireccion = $_POST['id_direccion'];
+            $resultadoDireccion = $usuarioController->updateDireccionById($idDireccion, $datosDireccion);
+            $mensaje = "actualizada";
+        } else {
+            // Si no hay ID, crear una nueva dirección
+            $resultadoDireccion = $usuarioController->addDireccion($idUsuario, $datosDireccion);
+            $mensaje = "añadida";
+        }
+
+        if ($resultadoDireccion) {
+            $_SESSION['mensaje_direccion'] = [
+                'tipo' => 'success',
+                'texto' => "Dirección $mensaje correctamente"
+            ];
+
+            // Redirigir para actualizar la página
+            header("Location: ajustes.php?tab=direcciones");
+            exit();
+        } else {
+            $mensajes['direccion']['tipo'] = 'error';
+            $mensajes['direccion']['texto'] = "Error al $mensaje la dirección";
+        }
+    }
+
+    // Eliminar dirección
+    if (isset($_POST['eliminar_direccion'])) {
+        $idDireccion = $_POST['id_direccion'];
+
+        if ($usuarioController->deleteDireccion($idDireccion, $idUsuario)) {
+            $_SESSION['mensaje_direccion'] = [
+                'tipo' => 'success',
+                'texto' => "Dirección eliminada correctamente"
+            ];
+
+            // Redirigir para actualizar la página
+            header("Location: ajustes.php?tab=direcciones");
+            exit();
+        } else {
+            $mensajes['direccion']['tipo'] = 'error';
+            $mensajes['direccion']['texto'] = "Error al eliminar la dirección";
+        }
+    }
+
     // Eliminar cuenta (si existe esta funcionalidad)
     if (isset($_POST['eliminar_cuenta'])) {
         // Lógica para eliminar cuenta
@@ -115,6 +195,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $mensajes['cuenta']['tipo'] = 'info';
         $mensajes['cuenta']['texto'] = "Esta funcionalidad aún no está implementada";
     }
+}
+
+// Verificar si hay mensajes almacenados en la sesión (de redirecciones)
+if (isset($_SESSION['mensaje_direccion'])) {
+    $mensajes['direccion'] = $_SESSION['mensaje_direccion'];
+    unset($_SESSION['mensaje_direccion']); // Limpiar el mensaje después de usarlo
 }
 ?>
 

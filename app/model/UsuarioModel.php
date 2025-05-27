@@ -40,9 +40,9 @@ class UsuarioModel
             error_log("UsuarioModel: Buscando usuario con email: $email");
 
             // Cambiado de "email" a "correo" para que coincida con la estructura de la tabla
-            $query = "SELECT * FROM usuarios WHERE correo = :email";
+            $query = "SELECT * FROM usuarios WHERE correo = :correo";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":email", $email);
+            $stmt->bindParam(":correo", $email);
             $stmt->execute();
 
             if ($stmt->rowCount() > 0) {
@@ -70,13 +70,13 @@ class UsuarioModel
     {
         try {
             // Ajustado para incluir "apellidos" y usar "correo" en lugar de "email"
-            $query = "INSERT INTO usuarios (nombre, apellidos, correo, contraseña, esAdmin) 
-                    VALUES (:nombre, '', :email, :password, 0)";
+            $query = "INSERT INTO usuarios (nombre, correo, contraseña) 
+                    VALUES (:nombre, :correo, :password)";
 
             $stmt = $this->conn->prepare($query);
 
             $stmt->bindParam(":nombre", $nombre);
-            $stmt->bindParam(":email", $email);
+            $stmt->bindParam(":correo", $email);
             $stmt->bindParam(":password", $password);
 
             return $stmt->execute();
@@ -150,9 +150,9 @@ class UsuarioModel
     {
         try {
             // Verificar que el email no esté en uso por otro usuario
-            $query = "SELECT ID_U FROM usuarios WHERE correo = :email AND ID_U != :idUsuario";
+            $query = "SELECT ID_U FROM usuarios WHERE correo = :correo AND ID_U != :idUsuario";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":email", $email);
+            $stmt->bindParam(":correo", $email);
             $stmt->bindParam(":idUsuario", $idUsuario, PDO::PARAM_INT);
             $stmt->execute();
 
@@ -162,9 +162,9 @@ class UsuarioModel
             }
 
             // Actualizar el email
-            $query = "UPDATE usuarios SET correo = :email WHERE ID_U = :idUsuario";
+            $query = "UPDATE usuarios SET correo = :correo WHERE ID_U = :idUsuario";
             $stmt = $this->conn->prepare($query);
-            $stmt->bindParam(":email", $email);
+            $stmt->bindParam(":correo", $email);
             $stmt->bindParam(":idUsuario", $idUsuario, PDO::PARAM_INT);
 
             return $stmt->execute();
@@ -218,6 +218,234 @@ class UsuarioModel
             return false;
         } catch (PDOException $e) {
             error_log("Error verificando contraseña de usuario: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get user's address
+     * 
+     * @param int $idUsuario User ID
+     * @return array|false Address data or false if not found
+     */
+    public function getDireccionUsuario($idUsuario)
+    {
+        try {
+            $query = "SELECT * FROM direccion WHERE idUsuario = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":id", $idUsuario);
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            return false;
+        } catch (PDOException $e) {
+            error_log("UsuarioModel::getDireccionUsuario Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get all addresses for a user
+     * 
+     * @param int $idUsuario User ID
+     * @return array Array of addresses or empty array if none found
+     */
+    public function getDireccionesUsuario($idUsuario)
+    {
+        try {
+            $query = "SELECT * FROM direccion WHERE idUsuario = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":id", $idUsuario);
+            $stmt->execute();
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log("UsuarioModel::getDireccionesUsuario Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get address by ID
+     * 
+     * @param int $idDireccion Address ID
+     * @return array|false Address data or false if not found
+     */
+    public function getDireccionById($idDireccion)
+    {
+        try {
+            $query = "SELECT * FROM direccion WHERE ID_Direccion = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":id", $idDireccion);
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            return false;
+        } catch (PDOException $e) {
+            error_log("UsuarioModel::getDireccionById Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Create a new address for user
+     * 
+     * @param int $idUsuario User ID
+     * @param array $datosDireccion Address data
+     * @return bool True if success, false otherwise
+     */
+    public function createDireccion($idUsuario, $datosDireccion)
+    {
+        try {
+            $query = "INSERT INTO direccion (idUsuario, calle, numero, codigoPostal) 
+                      VALUES (:id_usuario, :calle, :numero, :codigo_postal)";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":id_usuario", $idUsuario);
+            $stmt->bindParam(":calle", $datosDireccion['calle']);
+            $stmt->bindParam(":numero", $datosDireccion['numero']);
+            $stmt->bindParam(":codigo_postal", $datosDireccion['codigoPostal']);
+
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("UsuarioModel::createDireccion Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update user address
+     * 
+     * @param int $idUsuario User ID
+     * @param array $datosDireccion Address data
+     * @return bool True if success, false otherwise
+     */
+    public function updateDireccion($idUsuario, $datosDireccion)
+    {
+        try {
+            $query = "UPDATE direccion 
+                      SET calle = :calle, numero = :numero, codigoPostal = :codigo_postal 
+                      WHERE idUsuario = :id_usuario";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":calle", $datosDireccion['calle']);
+            $stmt->bindParam(":numero", $datosDireccion['numero']);
+            $stmt->bindParam(":codigo_postal", $datosDireccion['codigoPostal']);
+            $stmt->bindParam(":id_usuario", $idUsuario);
+
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("UsuarioModel::updateDireccion Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Delete user address
+     * 
+     * @param int $idDireccion Address ID
+     * @return bool True if success, false otherwise
+     */
+    public function deleteDireccion($idDireccion)
+    {
+        try {
+            $query = "DELETE FROM direccion WHERE ID_Direccion = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":id", $idDireccion);
+
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("UsuarioModel::deleteDireccion Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update user information
+     * 
+     * @param int $idUsuario User ID
+     * @param array $datos User data to update
+     * @return bool True if success, false otherwise
+     */
+    public function updateUser($idUsuario, $datos)
+    {
+        try {
+            $campos = [];
+            $valores = [];
+
+            // Prepare dynamic update fields
+            if (isset($datos['nombre']) && !empty($datos['nombre'])) {
+                $campos[] = "nombre = :nombre";
+                $valores[':nombre'] = $datos['nombre'];
+            }
+
+            if (isset($datos['apellidos']) && !empty($datos['apellidos'])) {
+                $campos[] = "apellidos = :apellidos";
+                $valores[':apellidos'] = $datos['apellidos'];
+            }
+
+            if (isset($datos['correo']) && !empty($datos['correo'])) {
+                $campos[] = "correo = :correo";
+                $valores[':correo'] = $datos['correo'];
+            }
+
+            if (empty($campos)) {
+                return false; // No hay campos para actualizar
+            }
+
+            $query = "UPDATE usuarios SET " . implode(", ", $campos) . " WHERE ID_U = :id";
+            $stmt = $this->conn->prepare($query);
+
+            // Bind parameters
+            foreach ($valores as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+
+            $stmt->bindParam(":id", $idUsuario);
+
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error actualizando datos de usuario: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update user password
+     * 
+     * @param int $idUsuario User ID
+     * @param string $hashedPassword New hashed password
+     * @return bool True if success, false otherwise
+     */
+    public function updatePassword($idUsuario, $hashedPassword)
+    {
+        return $this->updateUserPassword($idUsuario, $hashedPassword);
+    }
+
+    /**
+     * Update address by ID
+     * 
+     * @param int $idDireccion Address ID
+     * @param array $datosDireccion Address data
+     * @return bool True if success, false otherwise
+     */
+    public function updateDireccionById($idDireccion, $datosDireccion)
+    {
+        try {
+            $query = "UPDATE direccion 
+                      SET calle = :calle, numero = :numero, codigoPostal = :codigo_postal 
+                      WHERE ID_Direccion = :id_direccion";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(":calle", $datosDireccion['calle']);
+            $stmt->bindParam(":numero", $datosDireccion['numero']);
+            $stmt->bindParam(":codigo_postal", $datosDireccion['codigoPostal']);
+            $stmt->bindParam(":id_direccion", $idDireccion);
+
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("UsuarioModel::updateDireccionById Error: " . $e->getMessage());
             return false;
         }
     }
