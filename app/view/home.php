@@ -23,6 +23,249 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
     <title>RetroGames Store - Tu tienda de videojuegos clásicos</title>
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Estilo renovado para la sección del catálogo */
+        .catalog-section {
+            padding: 60px 0;
+            background: linear-gradient(135deg, #2e294e, #4B4474);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .catalog-section::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('img/pattern-retro.png');
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        .catalog-heading {
+            text-align: center;
+            margin-bottom: 50px;
+            color: #FFD700;
+            font-size: 2.5rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .catalog-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .catalog-card {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            width: calc(25% - 30px);
+            min-width: 250px;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-bottom: 4px solid #FFD700;
+        }
+
+        .catalog-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .catalog-card h2 {
+            color: #2e294e;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .catalog-card h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 3px;
+            background-color: #FFD700;
+        }
+
+        .catalog-card p {
+            color: #555;
+            line-height: 1.7;
+            margin-bottom: 25px;
+            flex-grow: 1;
+        }
+
+        .catalog-btn {
+            display: inline-block;
+            background-color: #2e294e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            text-align: center;
+            margin-top: auto;
+            border: 2px solid #2e294e;
+        }
+
+        .catalog-btn:hover {
+            background-color: #FFD700;
+            color: #2e294e;
+            border-color: #FFD700;
+            transform: scale(1.05);
+        }
+
+        /* Nuevo estilo para el banner principal */
+        .hero-section {
+            position: relative;
+            padding: 80px 0;
+            background: linear-gradient(to right, #2e294e, #4a3f73);
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('img/background/pixelated-pattern.png');
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: white;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        /* Cambio específico al estilo del título para hacerlo más limpio */
+        .hero-title {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+            color: white;
+            letter-spacing: 1px;
+            /* Quito animaciones y efectos de brillo */
+        }
+
+        .hero-subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .hero-btn {
+            display: inline-block;
+            background-color: #FFD700;
+            color: #2e294e;
+            font-weight: bold;
+            padding: 15px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            border: 2px solid #FFD700;
+        }
+
+        .hero-btn:hover {
+            background-color: transparent;
+            color: #FFD700;
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Decoraciones retro */
+        .retro-decoration {
+            position: absolute;
+            z-index: 1;
+        }
+
+        .retro-decoration.pacman {
+            width: 50px;
+            height: 50px;
+            top: 20%;
+            left: 5%;
+            background: url('img/icons/pacman.png') no-repeat;
+            background-size: contain;
+            animation: float 5s ease-in-out infinite;
+        }
+
+        .retro-decoration.space-invader {
+            width: 40px;
+            height: 40px;
+            top: 30%;
+            right: 8%;
+            background: url('img/icons/space-invader.png') no-repeat;
+            background-size: contain;
+            animation: float 4s ease-in-out infinite 1s;
+        }
+
+        .retro-decoration.tetris {
+            width: 60px;
+            height: 60px;
+            bottom: 20%;
+            right: 15%;
+            background: url('img/icons/tetris.png') no-repeat;
+            background-size: contain;
+            animation: float 6s ease-in-out infinite 2s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-20px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .catalog-card {
+                width: calc(50% - 30px);
+            }
+
+            .hero-title {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .catalog-card {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -79,11 +322,18 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
         <!-- Resto del contenido de la página... -->
 
         <!-- Banner promocional -->
-        <section class="hero-banner">
-            <div class="hero-content">
-                <h2>Revive la magia de los clásicos</h2>
-                <p>Tu destino para videojuegos, consolas y revistas retro</p>
-                <a href="#catalogo" class="btn-primary">Ver Catálogo</a>
+        <section class="hero-section">
+            <!-- Decoraciones retro (opcionales, se pueden eliminar si no se tienen las imágenes) -->
+            <div class="retro-decoration pacman"></div>
+            <div class="retro-decoration space-invader"></div>
+            <div class="retro-decoration tetris"></div>
+
+            <div class="container">
+                <div class="hero-content">
+                    <h1 class="hero-title">Revive la magia de los clásicos</h1>
+                    <p class="hero-subtitle">Videojuegos, consolas y accesorios de épocas pasadas para coleccionistas y amantes de lo retro</p>
+                    <a href="videojuegos.php" class="hero-btn">Explorar catálogo</a>
+                </div>
             </div>
         </section>
 
@@ -105,75 +355,38 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             </div>
         </section>
 
-        <!-- Categorías de productos -->
-        <section id="catalogo" class="categories-section">
+        <!-- Sección del catálogo -->
+        <section class="catalog-section">
             <div class="container">
-                <h2>Explora nuestro catálogo</h2>
-                <div class="categories-grid">
-                    <div class="category-card">
-                        <div class="category-img videogames-img"></div>
-                        <h3>Videojuegos</h3>
+                <h2 class="catalog-heading">Explora nuestro catálogo</h2>
+
+                <div class="catalog-grid">
+                    <!-- Tarjeta de Videojuegos -->
+                    <div class="catalog-card">
+                        <h2>Videojuegos</h2>
                         <p>Desde clásicos de NES hasta joyas de PlayStation, tenemos títulos para todas las generaciones.</p>
-                        <a href="videojuegos.php" class="btn-secondary">Ver Videojuegos</a>
+                        <a href="videojuegos.php" class="catalog-btn">Ver Videojuegos</a>
                     </div>
 
-                    <div class="category-card">
-                        <div class="category-img consoles-img"></div>
-                        <h3>Consolas</h3>
+                    <!-- Tarjeta de Consolas -->
+                    <div class="catalog-card">
+                        <h2>Consolas</h2>
                         <p>Consolas vintage en perfecto estado, restauradas y listas para revivir la magia.</p>
-                        <a href="consolas.php" class="btn-secondary">Ver Consolas</a>
+                        <a href="consolas.php" class="catalog-btn">Ver Consolas</a>
                     </div>
 
-                    <div class="category-card">
-                        <div class="category-img magazines-img"></div>
-                        <h3>Revistas</h3>
+                    <!-- Tarjeta de Revistas -->
+                    <div class="catalog-card">
+                        <h2>Revistas</h2>
                         <p>Publicaciones originales que documentan la evolución de los videojuegos a lo largo de las décadas.</p>
-                        <a href="revistas.php" class="btn-secondary">Ver Revistas</a>
+                        <a href="revistas.php" class="catalog-btn">Ver Revistas</a>
                     </div>
 
-                    <div class="category-card">
-                        <div class="category-img accessories-img"></div>
-                        <h3>Accesorios</h3>
+                    <!-- Tarjeta de Accesorios -->
+                    <div class="catalog-card">
+                        <h2>Accesorios</h2>
                         <p>Mandos, adaptadores, fundas y todo lo necesario para completar tu experiencia retro.</p>
-                        <a href="accesorios.php" class="btn-secondary">Ver Accesorios</a>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Sección de novedades o destacados -->
-        <section class="featured-section">
-            <div class="container">
-                <h2>Productos Destacados</h2>
-                <div class="featured-grid">
-                    <!-- Aquí iría un loop PHP para mostrar productos destacados de la base de datos -->
-                    <!-- Por ahora, colocaré algunos ejemplos estáticos -->
-                    <div class="product-card">
-                        <div class="product-img" style="background-image: url('img/products/super-mario-64.jpg');"></div>
-                        <h3>Super Mario 64</h3>
-                        <p class="price">59.99€</p>
-                        <a href="producto.php?id=1" class="btn-secondary">Ver Detalles</a>
-                    </div>
-
-                    <div class="product-card">
-                        <div class="product-img" style="background-image: url('img/products/ps1.jpg');"></div>
-                        <h3>PlayStation 1</h3>
-                        <p class="price">89.99€</p>
-                        <a href="producto.php?id=2" class="btn-secondary">Ver Detalles</a>
-                    </div>
-
-                    <div class="product-card">
-                        <div class="product-img" style="background-image: url('img/products/super-nes.jpg');"></div>
-                        <h3>Super Nintendo</h3>
-                        <p class="price">109.99€</p>
-                        <a href="producto.php?id=3" class="btn-secondary">Ver Detalles</a>
-                    </div>
-
-                    <div class="product-card">
-                        <div class="product-img" style="background-image: url('img/products/zelda-ocarina.jpg');"></div>
-                        <h3>Zelda: Ocarina of Time</h3>
-                        <p class="price">69.99€</p>
-                        <a href="producto.php?id=4" class="btn-secondary">Ver Detalles</a>
+                        <a href="accesorios.php" class="catalog-btn">Ver Accesorios</a>
                     </div>
                 </div>
             </div>

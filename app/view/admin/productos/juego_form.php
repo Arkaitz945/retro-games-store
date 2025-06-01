@@ -115,6 +115,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="../../css/home.css">
     <link rel="stylesheet" href="../../css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .checkbox-group {
+            margin-top: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            line-height: 1;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            margin-right: 8px;
+            margin-top: 0;
+            width: auto;
+            height: auto;
+        }
+    </style>
 </head>
 
 <body>
@@ -233,14 +254,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="form-group">
                             <label>Incluye:</label>
                             <div class="checkbox-group">
-                                <label for="incluye_caja">
+                                <div class="checkbox-wrapper">
                                     <input type="checkbox" id="incluye_caja" name="incluye_caja" <?php echo $juego['incluye_caja'] ? 'checked' : ''; ?>>
-                                    Caja original
-                                </label>
-                                <label for="incluye_manual">
+                                    <label for="incluye_caja">Caja original</label>
+                                </div>
+                                <div class="checkbox-wrapper">
                                     <input type="checkbox" id="incluye_manual" name="incluye_manual" <?php echo $juego['incluye_manual'] ? 'checked' : ''; ?>>
-                                    Manual de instrucciones
-                                </label>
+                                    <label for="incluye_manual">Manual de instrucciones</label>
+                                </div>
                             </div>
                         </div>
 
@@ -260,16 +281,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <div class="form-group full-width">
-                            <label for="imagen">Imagen:</label>
+                            <label>Imagen actual:</label>
                             <div class="image-preview-container">
                                 <?php if ($juego['imagen']): ?>
                                     <div class="current-image">
-                                        <p>Imagen actual:</p>
                                         <img src="../../<?php echo htmlspecialchars($juego['imagen']); ?>" alt="Imagen actual" class="img-preview">
                                     </div>
+                                <?php else: ?>
+                                    <p>No hay imagen asociada a este producto</p>
                                 <?php endif; ?>
-                                <input type="file" id="imagen" name="imagen" accept="image/*">
-                                <p class="small">Subir una nueva imagen <?php echo $accion == 'Editar' ? '(Dejar en blanco para mantener la actual)' : ''; ?></p>
                             </div>
                         </div>
                     </div>

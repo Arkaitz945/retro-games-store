@@ -449,4 +449,229 @@ class UsuarioModel
             return false;
         }
     }
+
+    /**
+     * Obtiene todos los usuarios del sistema
+     * 
+     * @return array Lista de usuarios
+     */
+    public function getAllUsuarios()
+    {
+        try {
+            $query = "SELECT * FROM usuarios ORDER BY nombre ASC";
+            $stmt = $this->conn->prepare($query);
+            $stmt->execute();
+
+            $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $usuarios;
+        } catch (PDOException $e) {
+            error_log("Error obteniendo todos los usuarios: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Obtiene un usuario específico por su ID
+     * 
+     * @param int $id ID del usuario
+     * @return array|false Datos del usuario o false si no existe
+     */
+    public function getUsuarioById($id)
+    {
+        try {
+            $query = "SELECT * FROM usuarios WHERE ID_U = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                return $stmt->fetch(PDO::FETCH_ASSOC);
+            }
+            return false;
+        } catch (PDOException $e) {
+            error_log("Error obteniendo usuario por ID: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Actualiza la información de un usuario
+     * 
+     * @param int $id ID del usuario
+     * @param array $usuario Datos del usuario a actualizar
+     * @return bool Resultado de la operación
+     */
+    public function updateUsuario($id, $usuario)
+    {
+        try {
+            // Construir la consulta dinámicamente para incluir solo los campos proporcionados
+            $campos = [];
+            $params = [':id' => $id];
+
+            if (isset($usuario['nombre'])) {
+                $campos[] = "nombre = :nombre";
+                $params[':nombre'] = $usuario['nombre'];
+            }
+
+            if (isset($usuario['email'])) {
+                $campos[] = "correo = :correo";
+                $params[':correo'] = $usuario['email'];
+            }
+
+            if (isset($usuario['apellidos'])) {
+                $campos[] = "apellidos = :apellidos";
+                $params[':apellidos'] = $usuario['apellidos'];
+            }
+
+            if (isset($usuario['admin'])) {
+                $campos[] = "esAdmin = :admin";
+                $params[':admin'] = $usuario['admin'];
+            }
+
+            // Si no hay campos para actualizar, retornar falso
+            if (empty($campos)) {
+                return false;
+            }
+
+            $query = "UPDATE usuarios SET " . implode(", ", $campos) . " WHERE ID_U = :id";
+            $stmt = $this->conn->prepare($query);
+
+            foreach ($params as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error actualizando usuario: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Elimina un usuario
+     * 
+     * @param int $id ID del usuario a eliminar
+     * @return bool Resultado de la operación
+     */
+    public function deleteUsuario($id)
+    {
+        try {
+            // Primero eliminar registros relacionados para evitar errores de clave foránea
+            $this->eliminarDependencias($id);
+
+            // Luego eliminar el usuario
+            $query = "DELETE FROM usuarios WHERE ID_U = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            return $stmt->execute();
+        } catch (PDOException $e) {
+            error_log("Error eliminando usuario: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Elimina registros dependientes del usuario (direcciones, carrito, etc.)
+     * 
+     * @param int $id ID del usuario
+     */
+    private function eliminarDependencias($id)
+    {
+        try {
+            // Eliminar direcciones
+            $query = "DELETE FROM direccion WHERE idUsuario = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+
+            // Eliminar items del carrito
+            $query = "DELETE FROM carrito WHERE id_usuario = :id";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+
+            // Aquí se pueden añadir más eliminaciones de registros relacionados si es necesario
+        } catch (PDOException $e) {
+            error_log("Error eliminando dependencias del usuario: " . $e->getMessage());
+            // No lanzamos excepción para permitir que se siga intentando eliminar el usuario
+        }
+    }
+
+    /**
+     * Obtiene estadísticas de usuarios
+     * 
+     * @param string $periodo Periodo de tiempo (día, mes, año)
+     * @return array Estadísticas de usuarios
+     */
+    public function getUsuariosEstadisticas($periodo = 'mes')
+    {
+        try {
+            $query = "";
+
+            switch ($periodo) {
+                case 'dia':
+                    // Estadísticas por día (últimos 30 días)
+                    $query = "SELECT DATE(fecha_registro) as periodo, COUNT(*) as nuevos_usuarios
+                              FROM usuarios
+                              WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                              GROUP BY DATE(fecha_registro)
+                              ORDER BY DATE(fecha_registro)";
+                    break;
+
+                case 'mes':
+                    // Estadísticas por mes (últimos 12 meses)
+                    $query = "SELECT DATE_FORMAT(fecha_registro, '%Y-%m') as periodo, COUNT(*) as nuevos_usuarios
+                              FROM usuarios
+                              WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                              GROUP BY DATE_FORMAT(fecha_registro, '%Y-%m')
+                              ORDER BY DATE_FORMAT(fecha_registro, '%Y-%m')";
+                    break;
+
+                case 'anio':
+                    // Estadísticas por año
+                    $query = "SELECT YEAR(fecha_registro) as periodo, COUNT(*) as nuevos_usuarios
+                              FROM usuarios
+                              GROUP BY YEAR(fecha_registro)
+                              ORDER BY YEAR(fecha_registro)";
+                    break;
+
+                default:
+                    // Por defecto, usar estadísticas mensuales
+                    $query = "SELECT DATE_FORMAT(fecha_registro, '%Y-%m') as periodo, COUNT(*) as nuevos_usuarios
+                              FROM usuarios
+                              WHERE fecha_registro >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+                              GROUP BY DATE_FORMAT(fecha_registro, '%Y-%m')
+                              ORDER BY DATE_FORMAT(fecha_registro, '%Y-%m')";
+            }
+
+            // Si la tabla usuarios no tiene campo fecha_registro, usar esta consulta alternativa
+            // que simplemente devuelve un conteo total
+            if (strpos($query, 'fecha_registro') !== false) {
+                try {
+                    $stmt = $this->conn->prepare($query);
+                    $stmt->execute();
+                    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+                } catch (PDOException $e) {
+                    // Si hay error, probablemente la columna no existe
+                    error_log("Error en consulta con fecha_registro: " . $e->getMessage());
+                    // Devolver datos ficticios para que la aplicación no falle
+                    return [
+                        ['periodo' => date('Y-m'), 'nuevos_usuarios' => count($this->getAllUsuarios())]
+                    ];
+                }
+            } else {
+                // Consulta de respaldo si la tabla no tiene fecha_registro
+                $stmt = $this->conn->prepare("SELECT COUNT(*) as total FROM usuarios");
+                $stmt->execute();
+                $total = $stmt->fetchColumn();
+
+                return [
+                    ['periodo' => 'Total', 'nuevos_usuarios' => $total]
+                ];
+            }
+        } catch (PDOException $e) {
+            error_log("Error obteniendo estadísticas de usuarios: " . $e->getMessage());
+            return [];
+        }
+    }
 }

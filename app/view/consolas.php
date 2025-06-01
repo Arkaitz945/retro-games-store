@@ -2,9 +2,14 @@
 // Iniciar sesión para acceder a variables de sesión
 session_start();
 
+// Incluir controladores
 require_once "../controller/ConsolasController.php";
+require_once "../controller/CarritoController.php";
+require_once "../helpers/ImageHelper.php";
 
 $consolasController = new ConsolasController();
+$carritoController = new CarritoController();
+$cantidadCarrito = isset($_SESSION['id']) ? $carritoController->countCartItems($_SESSION['id']) : 0;
 
 // Obtener filtros de la URL
 $filtros = [];
@@ -157,19 +162,38 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
             </div>
 
             <!-- Productos - Usando la misma estructura de videojuegos.php -->
+            <!-- Productos -->
             <div class="products-grid">
-                <?php if (empty($consolas)) : ?>
+                <?php if (empty($consolas)): ?>
                     <div class="no-results">
                         <p>No se encontraron consolas con los filtros seleccionados.</p>
                     </div>
-                <?php else : ?>
-                    <?php foreach ($consolas as $consola) : ?>
+                <?php else: ?>
+                    <?php foreach ($consolas as $consola): ?>
                         <div class="product-card">
-                            <div class="product-img" style="background-image: url('<?php echo htmlspecialchars($consola['imagen']); ?>');"></div>
-                            <div class="product-platform"><?php echo htmlspecialchars($consola['fabricante']); ?></div>
+                            <?php
+                            // Corregir rutas de imágenes para consolas
+                            $imagen = 'css/img/no-image.jpg';
+                            if (!empty($consola['imagen'])) {
+                                $nombreArchivo = basename($consola['imagen']);
+                                $imagen = "css/img/consolas/$nombreArchivo";
+
+                                // Verificar si existe la imagen
+                                if (!file_exists($imagen)) {
+                                    // Intentar con la ruta completa si es absoluta
+                                    if (file_exists($consola['imagen'])) {
+                                        $imagen = $consola['imagen'];
+                                    } else {
+                                        $imagen = 'css/img/no-image.jpg';
+                                    }
+                                }
+                            }
+                            ?>
+                            <div class="product-img" style="background-image: url('<?php echo $imagen; ?>');"></div>
+                            <div class="product-fabricante"><?php echo htmlspecialchars($consola['fabricante']); ?></div>
                             <h3><?php echo htmlspecialchars($consola['nombre']); ?></h3>
                             <div class="product-details">
-                                <span class="product-condition"><?php echo htmlspecialchars($consola['estado']); ?></span>
+                                <span class="product-estado"><?php echo htmlspecialchars($consola['estado']); ?></span>
                                 <span class="product-year"><?php echo htmlspecialchars($consola['año_lanzamiento']); ?></span>
                             </div>
                             <p class="price"><?php echo number_format($consola['precio'], 2); ?>€</p>
@@ -239,7 +263,7 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // JavaScript para el menú desplegable del usuario
+            // JavaScript para el menú desplegable
             const userBtn = document.querySelector('.user-btn');
             const dropdownContent = document.querySelector('.dropdown-content');
 
@@ -267,6 +291,8 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                     const productId = this.getAttribute('data-id');
                     const productType = this.getAttribute('data-tipo') || 'consola';
                     const productName = this.getAttribute('data-nombre');
+
+                    console.log(`Añadiendo al carrito: ${productName} (${productType} #${productId})`);
 
                     // Hacer una petición AJAX para añadir al carrito
                     fetch(`ajax_add_to_cart.php?action=add&tipo=${productType}&id=${productId}`)

@@ -285,19 +285,19 @@ a {
 }
 
 .videogames-img {
-  background-image: url("../img/categories/videogames.jpg");
+  background-image: url("img/categories/videogames.jpg");
 }
 
 .consoles-img {
-  background-image: url("../img/categories/consoles.jpg");
+  background-image: url("img/categories/consoles.jpg");
 }
 
 .magazines-img {
-  background-image: url("../img/categories/magazines.jpg");
+  background-image: url("img/categories/magazines.jpg");
 }
 
 .accessories-img {
-  background-image: url("../img/categories/accessories.jpg");
+  background-image: url("img/categories/accessories.jpg");
 }
 
 .category-card h3 {
@@ -551,4 +551,246 @@ a {
 
 .logo-link:hover h1 {
   color: #ffd700;
+}
+
+/* Estilo renovado para la sección del catálogo */
+.catalog-section {
+  padding: 60px 0;
+  background: linear-gradient(135deg, #2e294e, #4b4474);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.catalog-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("img/pattern-retro.png");
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+.catalog-heading {
+  text-align: center;
+  margin-bottom: 50px;
+  color: #ffd700;
+  font-size: 2.5rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.catalog-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  max-width: 1200px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+.catalog-card {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  padding: 30px;
+  width: calc(25% - 30px);
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-bottom: 4px solid #ffd700;
+}
+
+.catalog-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+}
+
+.catalog-card h2 {
+  color: #2e294e;
+  margin-top: 0;
+  margin-bottom: 15px;
+  font-size: 1.8rem;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.catalog-card h2::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background-color: #ffd700;
+}
+
+.catalog-card p {
+  color: #555;
+  line-height: 1.7;
+  margin-bottom: 25px;
+  flex-grow: 1;
+}
+
+.catalog-btn {
+  display: inline-block;
+  background-color: #2e294e;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  text-align: center;
+  margin-top: auto;
+  border: 2px solid #2e294e;
+}
+
+.catalog-btn:hover {
+  background-color: #ffd700;
+  color: #2e294e;
+  border-color: #ffd700;
+  transform: scale(1.05);
+}
+
+/* Nuevo estilo para el banner principal */
+.hero-section {
+  position: relative;
+  padding: 80px 0;
+  background: linear-gradient(to right, #2e294e, #4a3f73);
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("img/background/pixelated-pattern.png");
+  opacity: 0.1;
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  color: white;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Cambio específico al estilo del título para hacerlo más limpio */
+.hero-title {
+  font-size: 3.5rem;
+  margin-bottom: 20px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 1px;
+  /* Quito animaciones y efectos de brillo */
+}
+
+.hero-subtitle {
+  font-size: 1.5rem;
+  margin-bottom: 30px;
+  font-weight: 300;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hero-btn {
+  display: inline-block;
+  background-color: #ffd700;
+  color: #2e294e;
+  font-weight: bold;
+  padding: 15px 30px;
+  border-radius: 50px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border: 2px solid #ffd700;
+}
+
+.hero-btn:hover {
+  background-color: transparent;
+  color: #ffd700;
+  transform: translateY(-3px);
+  box-shadow: 0 7px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Decoraciones retro */
+.retro-decoration {
+  position: absolute;
+  z-index: 1;
+}
+
+.retro-decoration.pacman {
+  width: 50px;
+  height: 50px;
+  top: 20%;
+  left: 5%;
+  background: url("img/icons/pacman.png") no-repeat;
+  background-size: contain;
+  animation: float 5s ease-in-out infinite;
+}
+
+.retro-decoration.space-invader {
+  width: 40px;
+  height: 40px;
+  top: 30%;
+  right: 8%;
+  background: url("img/icons/space-invader.png") no-repeat;
+  background-size: contain;
+  animation: float 4s ease-in-out infinite 1s;
+}
+
+.retro-decoration.tetris {
+  width: 60px;
+  height: 60px;
+  bottom: 20%;
+  right: 15%;
+  background: url("img/icons/tetris.png") no-repeat;
+  background-size: contain;
+  animation: float 6s ease-in-out infinite 2s;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .catalog-card {
+    width: calc(50% - 30px);
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .catalog-card {
+    width: 100%;
+  }
 }

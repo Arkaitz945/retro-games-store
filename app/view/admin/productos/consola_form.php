@@ -199,16 +199,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <div class="form-group full-width">
-                            <label for="imagen">Imagen:</label>
+                            <label>Imagen actual:</label>
                             <div class="image-preview-container">
                                 <?php if ($consola['imagen']): ?>
                                     <div class="current-image">
-                                        <p>Imagen actual:</p>
                                         <img src="../../<?php echo htmlspecialchars($consola['imagen']); ?>" alt="Imagen actual" class="img-preview">
                                     </div>
+                                <?php else: ?>
+                                    <p>No hay imagen asociada a este producto</p>
                                 <?php endif; ?>
-                                <input type="file" id="imagen" name="imagen" accept="image/*">
-                                <p class="small">Subir una nueva imagen <?php echo $accion == 'Editar' ? '(Dejar en blanco para mantener la actual)' : ''; ?></p>
                             </div>
                         </div>
                     </div>

@@ -101,7 +101,7 @@ class CarritoModel
                     break;
 
                 case 'revista':
-                    $query = "SELECT nombre, editorial AS plataforma, precio, imagen, stock 
+                    $query = "SELECT titulo AS nombre, editorial AS plataforma, precio, imagen, stock 
                               FROM revistas 
                               WHERE ID_Revista = :productoId";
                     break;

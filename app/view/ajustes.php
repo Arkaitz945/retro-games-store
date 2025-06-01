@@ -12,8 +12,11 @@ if (!isset($_SESSION['usuario'])) {
 
 // Incluir controlador
 require_once "../controller/UsuarioController.php";
+require_once "../controller/CarritoController.php"; // Añadido para obtener la cantidad del carrito
 
 $usuarioController = new UsuarioController();
+$carritoController = new CarritoController(); // Inicializar el controlador del carrito
+
 $idUsuario = $_SESSION['id'];
 $nombreUsuario = $_SESSION['usuario'];
 $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
@@ -201,6 +204,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 if (isset($_SESSION['mensaje_direccion'])) {
     $mensajes['direccion'] = $_SESSION['mensaje_direccion'];
     unset($_SESSION['mensaje_direccion']); // Limpiar el mensaje después de usarlo
+}
+
+// Inicializar la cantidad del carrito - Esta es la línea que faltaba
+$cantidadCarrito = 0;
+if (isset($_SESSION['id'])) {
+    $cantidadCarrito = $carritoController->countCartItems($_SESSION['id']);
 }
 ?>
 

@@ -55,6 +55,10 @@ class CarritoController
                 break;
             case 'revista':
                 $producto = $this->revistasModel->getRevistaById($productoId);
+                // Asegurar que el nombre del producto esté disponible para mensajes
+                if ($producto && isset($producto['titulo'])) {
+                    $producto['nombre'] = $producto['titulo'];
+                }
                 break;
             default:
                 return [

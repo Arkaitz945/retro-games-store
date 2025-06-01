@@ -140,7 +140,7 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                 <p>Se encontraron <?php echo count($revistas); ?> revistas</p>
             </div>
 
-            <!-- Productos - Usando la misma estructura de videojuegos.php -->
+            <!-- Productos -->
             <div class="products-grid">
                 <?php if (empty($revistas)): ?>
                     <div class="no-results">
@@ -149,26 +149,55 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                 <?php else: ?>
                     <?php foreach ($revistas as $revista): ?>
                         <div class="product-card">
-                            <div class="product-img" style="background-image: url('<?php echo htmlspecialchars($revista['imagen']); ?>');"></div>
-                            <div class="product-platform"><?php echo htmlspecialchars($revista['editorial']); ?></div>
-                            <h3><?php echo htmlspecialchars($revista['titulo']); ?></h3>
-                            <div class="product-details">
-                                <span class="product-genre">Revista</span>
-                                <span class="product-year"><?php echo date('Y', strtotime($revista['fecha_publicacion'])); ?></span>
-                            </div>
-                            <p class="price"><?php echo number_format($revista['precio'], 2); ?>€</p>
-                            <div class="product-actions">
-                                <a href="revista_detalle.php?id=<?php echo $revista['ID_Revista']; ?>" class="btn-secondary">Ver Detalles</a>
-                                <?php if ($revista['stock'] > 0): ?>
-                                    <button type="button" class="btn-add-cart"
-                                        data-id="<?php echo $revista['ID_Revista']; ?>"
-                                        data-tipo="revista"
-                                        data-nombre="<?php echo htmlspecialchars($revista['titulo']); ?>">
-                                        <i class="fas fa-cart-plus"></i> Añadir
-                                    </button>
-                                <?php else: ?>
-                                    <span class="out-of-stock">Agotado</span>
-                                <?php endif; ?>
+                            <?php
+                            // Corregir rutas de imágenes para revistas
+                            $imagen = 'css/img/no-image.jpg';
+                            if (!empty($revista['imagen'])) {
+                                $nombreArchivo = basename($revista['imagen']);
+                                $imagen = "css/img/revistas/$nombreArchivo";
+
+                                // Verificar si existe la imagen
+                                if (!file_exists($imagen)) {
+                                    // Intentar con la ruta completa si es absoluta
+                                    if (file_exists($revista['imagen'])) {
+                                        $imagen = $revista['imagen'];
+                                    } else {
+                                        $imagen = 'css/img/no-image.jpg';
+                                    }
+                                }
+                            }
+
+                            // Usar el campo título en lugar de nombre para revistas
+                            $titulo = isset($revista['titulo']) ? htmlspecialchars($revista['titulo']) : 'Sin título';
+                            $id = $revista['ID_Revista'];
+                            $precio = isset($revista['precio']) ? number_format($revista['precio'], 2) : '0.00';
+                            $stock = isset($revista['stock']) ? (int)$revista['stock'] : 0;
+                            ?>
+                            <div class="product-img" style="background-image: url('<?php echo $imagen; ?>');"></div>
+                            <div class="product-info">
+                                <div>
+                                    <h3 class="product-title"><?php echo $titulo; ?></h3>
+                                    <div class="product-details">
+                                        <span class="product-editorial"><?php echo htmlspecialchars($revista['editorial'] ?? ''); ?></span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="product-price"><?php echo $precio; ?>€</p>
+                                    <div class="product-buttons">
+                                        <a href="revista_detalle.php?id=<?php echo $id; ?>" class="btn btn-primary">Ver Detalles</a>
+                                        <?php if ($stock > 0): ?>
+                                            <button
+                                                class="btn btn-add-cart"
+                                                data-id="<?php echo $id; ?>"
+                                                data-tipo="revista"
+                                                data-nombre="<?php echo $titulo; ?>">
+                                                <i class="fas fa-shopping-cart"></i> Añadir
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="out-of-stock">Agotado</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -251,6 +280,8 @@ $filtroPrecioMax = isset($_GET['precio_max']) ? $_GET['precio_max'] : $precioMax
                     const productId = this.getAttribute('data-id');
                     const productType = this.getAttribute('data-tipo') || 'revista';
                     const productName = this.getAttribute('data-nombre');
+
+                    console.log(`Añadiendo al carrito: ${productName} (${productType} #${productId})`);
 
                     // Hacer una petición AJAX para añadir al carrito
                     fetch(`ajax_add_to_cart.php?action=add&tipo=${productType}&id=${productId}`)

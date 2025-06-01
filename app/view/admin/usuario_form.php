@@ -12,25 +12,7 @@ if (!isset($_SESSION['usuario']) || !isset($_SESSION['admin']) || $_SESSION['adm
 
 require_once "../../controller/admin/UsuariosAdminController.php";
 
-// Verificar que el modelo de dirección existe antes de cargarlo
-$direccionModelPath = "../../model/DireccionModel.php";
-if (!file_exists($direccionModelPath)) {
-    // Si el archivo no existe, mostramos un mensaje y creamos un objeto vacío
-    error_log("ERROR: El archivo DireccionModel.php no existe en: " . realpath(dirname($direccionModelPath)) . "/" . basename($direccionModelPath));
-    // Definir una clase simple para evitar errores
-    class DireccionModel
-    {
-        public function getDireccionByUsuario($id)
-        {
-            return null;
-        }
-    }
-} else {
-    require_once $direccionModelPath;
-}
-
 $usuariosController = new UsuariosAdminController();
-$direccionModel = new DireccionModel();
 
 $nombreUsuario = $_SESSION['usuario'];
 $modoEdicion = false;
@@ -50,9 +32,10 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
         exit();
     }
 
-    // Obtener la dirección del usuario - envolvemos en try/catch para evitar interrupciones
+    // Obtener la dirección del usuario usando el método del controlador de usuarios
     try {
-        $direccion = $direccionModel->getDireccionByUsuario($idUsuario);
+        // Asumimos que el controlador puede obtener la dirección
+        $direccion = $usuariosController->getDireccionUsuario($idUsuario);
         if (!$direccion) {
             error_log("No se encontró dirección para el usuario ID: " . $idUsuario);
         }
@@ -90,9 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Si existe dirección, actualizarla; si no, crearla
             if ($direccion) {
-                $resultadoDireccion = $direccionModel->updateDireccion($direccion['ID_Direccion'], $datosDireccion);
+                // Usar el método del controlador de usuarios para actualizar la dirección
+                $resultadoDireccion = $usuariosController->updateDireccionUsuario($direccion['ID_Direccion'], $datosDireccion);
             } else if (!empty($datosDireccion['calle'])) {
-                $resultadoDireccion = $direccionModel->createDireccion($datosDireccion);
+                // Usar el método del controlador de usuarios para crear la dirección
+                $resultadoDireccion = $usuariosController->createDireccionUsuario($idUsuario, $datosDireccion);
             }
 
             if ($resultado['success']) {

@@ -103,7 +103,25 @@ if (!$juego) {
 
             <div class="product-detail">
                 <div class="product-media">
-                    <div class="product-main-image" style="background-image: url('<?php echo htmlspecialchars($juego['imagen']); ?>')"></div>
+                    <?php
+                    // Corregir rutas de imágenes para videojuegos
+                    $imagen = 'css/img/no-image.jpg';
+                    if (!empty($juego['imagen'])) {
+                        $nombreArchivo = basename($juego['imagen']);
+                        $imagen = "css/img/videojuegos/$nombreArchivo";
+
+                        // Verificar si existe la imagen
+                        if (!file_exists($imagen)) {
+                            // Intentar con la ruta completa si es absoluta
+                            if (file_exists($juego['imagen'])) {
+                                $imagen = $juego['imagen'];
+                            } else {
+                                $imagen = 'css/img/no-image.jpg';
+                            }
+                        }
+                    }
+                    ?>
+                    <div class="product-main-image" style="background-image: url('<?php echo $imagen; ?>')"></div>
                 </div>
 
                 <div class="product-info">
@@ -288,17 +306,6 @@ if (!$juego) {
                         quantityInput.value = value + 1;
                     }
                 });
-
-                quantityInput.addEventListener('change', function() {
-                    let value = parseInt(this.value);
-                    let max = parseInt(this.getAttribute('max'));
-
-                    if (isNaN(value) || value < 1) {
-                        this.value = 1;
-                    } else if (value > max) {
-                        this.value = max;
-                    }
-                });
             }
 
             // Añadir al carrito
@@ -310,6 +317,8 @@ if (!$juego) {
                     const tipo = this.getAttribute('data-tipo');
                     const nombre = this.getAttribute('data-nombre');
                     const cantidad = parseInt(document.getElementById('product-quantity').value);
+
+                    console.log(`Añadiendo al carrito: ${nombre} (${tipo} #${id}) - Cantidad: ${cantidad}`);
 
                     // Petición AJAX para añadir al carrito
                     fetch(`ajax_add_to_cart.php?action=add&tipo=${tipo}&id=${id}&cantidad=${cantidad}`)

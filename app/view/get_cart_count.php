@@ -6,6 +6,7 @@ if (session_status() == PHP_SESSION_NONE) {
 
 // Verificar si el usuario está logueado
 if (!isset($_SESSION['usuario'])) {
+    header('Content-Type: application/json');
     echo json_encode(['count' => 0]);
     exit();
 }
@@ -16,9 +17,9 @@ require_once "../controller/CarritoController.php";
 $carritoController = new CarritoController();
 $idUsuario = $_SESSION['id'];
 
-// Obtener el número de items en el carrito
+// Obtener la cantidad de items en el carrito
 $count = $carritoController->countCartItems($idUsuario);
 
-// Devolver como JSON
+// Devolver respuesta como JSON
 header('Content-Type: application/json');
 echo json_encode(['count' => $count]);

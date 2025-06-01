@@ -135,7 +135,25 @@ $consolasRelacionadas = $consolasController->getConsolasRelacionadas($idConsola,
 
             <div class="product-detail-container">
                 <div class="product-image">
-                    <img src="<?php echo htmlspecialchars($consola['imagen']); ?>" alt="<?php echo htmlspecialchars($consola['nombre']); ?>">
+                    <?php
+                    // Corregir rutas de imágenes para consolas
+                    $imagen = 'css/img/no-image.jpg';
+                    if (!empty($consola['imagen'])) {
+                        $nombreArchivo = basename($consola['imagen']);
+                        $imagen = "css/img/consolas/$nombreArchivo";
+
+                        // Verificar si existe la imagen
+                        if (!file_exists($imagen)) {
+                            // Intentar con la ruta completa si es absoluta
+                            if (file_exists($consola['imagen'])) {
+                                $imagen = $consola['imagen'];
+                            } else {
+                                $imagen = 'css/img/no-image.jpg';
+                            }
+                        }
+                    }
+                    ?>
+                    <img src="<?php echo $imagen; ?>" alt="<?php echo htmlspecialchars($consola['nombre']); ?>">
                 </div>
 
                 <div class="product-info">
@@ -189,7 +207,25 @@ $consolasRelacionadas = $consolasController->getConsolasRelacionadas($idConsola,
                     <div class="related-grid">
                         <?php foreach ($consolasRelacionadas as $relacionada) : ?>
                             <div class="product-card">
-                                <div class="product-img" style="background-image: url('<?php echo htmlspecialchars($relacionada['imagen']); ?>');">
+                                <?php
+                                // Corregir rutas de imágenes para consolas relacionadas
+                                $imagen = 'css/img/no-image.jpg';
+                                if (!empty($relacionada['imagen'])) {
+                                    $nombreArchivo = basename($relacionada['imagen']);
+                                    $imagen = "css/img/consolas/$nombreArchivo";
+
+                                    // Verificar si existe la imagen
+                                    if (!file_exists($imagen)) {
+                                        // Intentar con la ruta completa si es absoluta
+                                        if (file_exists($relacionada['imagen'])) {
+                                            $imagen = $relacionada['imagen'];
+                                        } else {
+                                            $imagen = 'css/img/no-image.jpg';
+                                        }
+                                    }
+                                }
+                                ?>
+                                <div class="product-img" style="background-image: url('<?php echo $imagen; ?>');">
                                     <div class="product-badge">
                                         <?php echo htmlspecialchars($relacionada['estado']); ?>
                                     </div>
@@ -275,11 +311,26 @@ $consolasRelacionadas = $consolasController->getConsolasRelacionadas($idConsola,
                 });
             }
 
-            // Notificación
+            // Control de cantidad
+            const cantidadInput = document.getElementById('cantidad');
+            if (cantidadInput) {
+                const maxStock = parseInt(cantidadInput.getAttribute('max'));
+
+                cantidadInput.addEventListener('change', function() {
+                    if (this.value < 1) {
+                        this.value = 1;
+                    } else if (this.value > maxStock) {
+                        this.value = maxStock;
+                    }
+                });
+            }
+
+            // Cerrar notificación
+            const closeNotificationBtn = document.getElementById('close-notification');
             const notification = document.getElementById('notification');
-            if (notification) {
-                const closeBtn = document.getElementById('close-notification');
-                closeBtn.addEventListener('click', function() {
+
+            if (closeNotificationBtn && notification) {
+                closeNotificationBtn.addEventListener('click', function() {
                     notification.style.display = 'none';
                 });
 
@@ -289,15 +340,33 @@ $consolasRelacionadas = $consolasController->getConsolasRelacionadas($idConsola,
                 }, 5000);
             }
 
-            // Control de cantidad
-            const cantidadInput = document.getElementById('cantidad');
-            if (cantidadInput) {
-                cantidadInput.addEventListener('change', function() {
-                    const maxStock = <?php echo $consola['stock']; ?>;
-                    if (this.value < 1) {
-                        this.value = 1;
-                    } else if (this.value > maxStock) {
-                        this.value = maxStock;
+            // Botón de añadir al carrito
+            const addToCartBtn = document.querySelector('.btn-add-to-cart');
+            if (addToCartBtn && !addToCartBtn.hasAttribute('disabled')) {
+                addToCartBtn.addEventListener('click', function(e) {
+                    // Si no es parte de un formulario, se manejará aquí
+                    if (!this.closest('form')) {
+                        e.preventDefault();
+
+                        const productId = this.getAttribute('data-id');
+                        const productType = this.getAttribute('data-tipo') || 'consola';
+                        const productName = this.getAttribute('data-nombre');
+                        const cantidad = document.getElementById('cantidad') ?
+                            parseInt(document.getElementById('cantidad').value) : 1;
+
+                        // AJAX para añadir al carrito (si se necesita)
+                        fetch(`ajax_add_to_cart.php?action=add&tipo=${productType}&id=${productId}&cantidad=${cantidad}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    showToast(`${productName} se ha añadido correctamente a tu carrito`, false);
+                                } else {
+                                    showToast(data.message || 'Error al añadir el producto al carrito', true);
+                                }
+                            })
+                            .catch(error => {
+                                showToast('Error al añadir el producto al carrito', true);
+                            });
                     }
                 });
             }

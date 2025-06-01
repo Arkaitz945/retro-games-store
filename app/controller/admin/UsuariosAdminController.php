@@ -1,6 +1,7 @@
 <?php
 
-require_once __DIR__ . "/../../model/UsuariosModel.php";
+// Modificado para usar el modelo correcto (singular en lugar de plural)
+require_once __DIR__ . "/../../model/UsuarioModel.php";
 
 class UsuariosAdminController
 {
@@ -8,7 +9,8 @@ class UsuariosAdminController
 
     public function __construct()
     {
-        $this->usuariosModel = new UsuariosModel();
+        // Cambiado para usar el modelo correcto (UsuarioModel en lugar de UsuariosModel)
+        $this->usuariosModel = new UsuarioModel();
     }
 
     /**
@@ -121,6 +123,41 @@ class UsuariosAdminController
                 'message' => 'Error al eliminar el usuario'
             ];
         }
+    }
+
+    /**
+     * Obtiene la dirección de un usuario
+     * 
+     * @param int $idUsuario ID del usuario
+     * @return array|false Datos de la dirección o false si no existe
+     */
+    public function getDireccionUsuario($idUsuario)
+    {
+        return $this->usuariosModel->getDireccionUsuario($idUsuario);
+    }
+
+    /**
+     * Actualiza una dirección existente
+     * 
+     * @param int $idDireccion ID de la dirección
+     * @param array $datos Datos de la dirección
+     * @return bool Resultado de la operación
+     */
+    public function updateDireccionUsuario($idDireccion, $datos)
+    {
+        return $this->usuariosModel->updateDireccionById($idDireccion, $datos);
+    }
+
+    /**
+     * Crea una nueva dirección para un usuario
+     * 
+     * @param int $idUsuario ID del usuario
+     * @param array $datos Datos de la dirección
+     * @return bool Resultado de la operación
+     */
+    public function createDireccionUsuario($idUsuario, $datos)
+    {
+        return $this->usuariosModel->createDireccion($idUsuario, $datos);
     }
 
     /**

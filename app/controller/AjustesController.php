@@ -11,7 +11,7 @@ class AjustesController
     public function __construct()
     {
         $this->usuarioModel = new UsuarioModel();
-        $this->direccionModel = new DireccionModel();
+        // $this->direccionModel = new DireccionModel();
     }
 
     /**

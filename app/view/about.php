@@ -39,32 +39,30 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
         }
 
         .about-hero {
-            height: 300px;
+            height: 200px;
             border-radius: 10px;
             overflow: hidden;
             margin-bottom: 30px;
             position: relative;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .about-hero img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
+            display: none;
         }
 
         .hero-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
+            position: static;
             width: 100%;
-            height: 100%;
-            background-color: rgba(46, 41, 78, 0.7);
+            background-color: transparent;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: white;
+            color: #2e294e;
             padding: 20px;
         }
 
@@ -245,22 +243,11 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             overflow: hidden;
             text-align: center;
             transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .team-member:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding-top: 20px;
         }
 
         .member-photo {
-            height: 200px;
-            overflow: hidden;
-        }
-
-        .member-photo img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+            display: none;
         }
 
         .member-info {
@@ -326,13 +313,14 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             margin-top: 50px;
             padding: 30px;
             background-color: #2e294e;
-            color: white;
+            color: #ffeb99;
             border-radius: 10px;
         }
 
         .about-cta h3 {
             font-size: 1.8rem;
             margin-bottom: 15px;
+            color: #ffeb99;
         }
 
         .about-cta p {
@@ -340,6 +328,7 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
             max-width: 700px;
             margin-left: auto;
             margin-right: auto;
+            color: #ffeb99;
         }
 
         .btn-white {
@@ -435,7 +424,6 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
         <div class="about-container">
             <div class="about-header">
                 <div class="about-hero">
-                    <img src="img/about/store-hero.jpg" alt="RetroGames Store">
                     <div class="hero-overlay">
                         <h1>Sobre RetroGames Store</h1>
                         <p>Reviviendo la nostalgia de los videojuegos clásicos desde 2010</p>
@@ -555,9 +543,6 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
 
                 <div class="team-grid">
                     <div class="team-member">
-                        <div class="member-photo">
-                            <img src="img/about/team-1.jpg" alt="Carlos Martínez">
-                        </div>
                         <div class="member-info">
                             <div class="member-name">Carlos Martínez</div>
                             <div class="member-role">Fundador y Director</div>
@@ -570,9 +555,6 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                     </div>
 
                     <div class="team-member">
-                        <div class="member-photo">
-                            <img src="img/about/team-2.jpg" alt="María López">
-                        </div>
                         <div class="member-info">
                             <div class="member-name">María López</div>
                             <div class="member-role">Co-fundadora y Resp. de Adquisiciones</div>
@@ -585,9 +567,6 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                     </div>
 
                     <div class="team-member">
-                        <div class="member-photo">
-                            <img src="img/about/team-3.jpg" alt="Javier Sánchez">
-                        </div>
                         <div class="member-info">
                             <div class="member-name">Javier Sánchez</div>
                             <div class="member-role">Técnico de Restauración</div>
@@ -600,9 +579,6 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                     </div>
 
                     <div class="team-member">
-                        <div class="member-photo">
-                            <img src="img/about/team-4.jpg" alt="Laura Gómez">
-                        </div>
                         <div class="member-info">
                             <div class="member-name">Laura Gómez</div>
                             <div class="member-role">Responsable de Atención al Cliente</div>

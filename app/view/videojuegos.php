@@ -13,6 +13,7 @@ if (!isset($_SESSION['usuario'])) {
 // Incluir controlador
 require_once "../controller/JuegosController.php";
 require_once "../controller/CarritoController.php";
+require_once "../helpers/ImageHelper.php";
 
 $juegosController = new JuegosController();
 $carritoController = new CarritoController();
@@ -167,27 +168,57 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                 <?php else: ?>
                     <?php foreach ($juegos as $juego): ?>
                         <div class="product-card">
-                            <div class="product-img" style="background-image: url('<?php echo htmlspecialchars($juego['imagen']); ?>');"></div>
-                            <div class="product-platform"><?php echo htmlspecialchars($juego['plataforma']); ?></div>
-                            <h3><?php echo htmlspecialchars($juego['nombre']); ?></h3>
-                            <div class="product-details">
-                                <span class="product-genre"><?php echo htmlspecialchars($juego['genero']); ?></span>
-                                <span class="product-year"><?php echo htmlspecialchars($juego['año_lanzamiento']); ?></span>
-                            </div>
-                            <div class="product-condition"><?php echo htmlspecialchars($juego['estado']); ?></div>
-                            <p class="price"><?php echo number_format($juego['precio'], 2); ?>€</p>
-                            <div class="product-actions">
-                                <a href="producto.php?id=<?php echo $juego['ID_J']; ?>" class="btn-secondary">Ver Detalles</a>
-                                <?php if ($juego['stock'] > 0): ?>
-                                    <button type="button" class="btn-add-cart"
-                                        data-id="<?php echo $juego['ID_J']; ?>"
-                                        data-tipo="juego"
-                                        data-nombre="<?php echo htmlspecialchars($juego['nombre']); ?>">
-                                        <i class="fas fa-cart-plus"></i> Añadir
-                                    </button>
-                                <?php else: ?>
-                                    <span class="out-of-stock">Agotado</span>
+                            <?php
+                            // Mantener la corrección de rutas de imágenes
+                            $imagen = 'css/img/no-image.jpg';
+                            if (!empty($juego['imagen'])) {
+                                $nombreArchivo = basename($juego['imagen']);
+                                $imagen = "css/img/videojuegos/$nombreArchivo";
+                            }
+
+                            $id = isset($juego['id']) ? (int)$juego['id'] : 0;
+                            $nombre = isset($juego['nombre']) ? htmlspecialchars($juego['nombre']) : 'Sin nombre';
+                            $plataforma = isset($juego['plataforma']) ? htmlspecialchars($juego['plataforma']) : '';
+                            $anio = isset($juego['ano']) ? htmlspecialchars($juego['ano']) : '';
+                            $estado = isset($juego['estado']) ? htmlspecialchars($juego['estado']) : '';
+                            $precio = isset($juego['precio']) ? number_format((float)$juego['precio'], 2) : '0.00';
+                            ?>
+
+                            <div class="product-image">
+                                <?php if ($plataforma): ?>
+                                    <span class="product-platform"><?php echo $plataforma; ?></span>
                                 <?php endif; ?>
+                                <img src="<?php echo $imagen; ?>" alt="<?php echo $nombre; ?>" class="product-img">
+                            </div>
+                            <div class="product-info">
+                                <div>
+                                    <h3 class="product-title"><?php echo $nombre; ?></h3>
+                                    <div class="product-details">
+                                        <?php if ($anio): ?>
+                                            <span class="product-year"><?php echo $anio; ?></span>
+                                        <?php endif; ?>
+                                        <?php if ($estado): ?>
+                                            <span class="product-state"><?php echo $estado; ?></span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div>
+                                    <p class="product-price"><?php echo $precio; ?>€</p>
+                                    <div class="product-buttons">
+                                        <a href="producto.php?id=<?php echo $juego['ID_J']; ?>" class="btn btn-primary">Ver Detalles</a>
+                                        <?php if ($juego['stock'] > 0): ?>
+                                            <button
+                                                class="btn btn-add-cart"
+                                                data-id="<?php echo $juego['ID_J']; ?>"
+                                                data-tipo="juego"
+                                                data-nombre="<?php echo htmlspecialchars($juego['nombre']); ?>">
+                                                <i class="fas fa-shopping-cart"></i> Añadir
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="out-of-stock">Agotado</span>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -267,16 +298,20 @@ $esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
                     }
                 }
             });
+        });
 
-            // Manejar los botones de añadir al carrito
+        document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.btn-add-cart').forEach(button => {
                 button.addEventListener('click', function(e) {
                     e.preventDefault();
+                    console.log('Add to cart button clicked');
 
                     // Obtener información del producto
                     const productId = this.getAttribute('data-id');
                     const productType = this.getAttribute('data-tipo') || 'juego';
                     const productName = this.getAttribute('data-nombre');
+
+                    console.log(`Adding to cart: ${productName} (${productType} #${productId})`);
 
                     // Hacer una petición AJAX para añadir al carrito
                     fetch(`ajax_add_to_cart.php?action=add&tipo=${productType}&id=${productId}`)

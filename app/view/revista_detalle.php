@@ -1,58 +1,40 @@
 <?php
-// Iniciar sesión para acceder a variables de sesión
-session_start();
+// Iniciar sesión si no está iniciada
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
 
+// Verificar si el usuario está logueado
+if (!isset($_SESSION['usuario'])) {
+    header("Location: index.php");
+    exit();
+}
+
+// Verificar si se ha proporcionado un ID de revista
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header("Location: revistas.php");
+    exit();
+}
+
+// Incluir controladores
 require_once "../controller/RevistasController.php";
 require_once "../controller/CarritoController.php";
 
 $revistasController = new RevistasController();
 $carritoController = new CarritoController();
+$idRevista = (int)$_GET['id'];
+$nombreUsuario = $_SESSION['usuario'];
+$esAdmin = isset($_SESSION['admin']) && $_SESSION['admin'] == 1;
+$cantidadCarrito = isset($_SESSION['id']) ? $carritoController->countCartItems($_SESSION['id']) : 0;
 
-// Verificar si se proporcionó un ID
-if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
-    header('Location: revistas.php');
-    exit();
-}
-
-$idRevista = $_GET['id'];
+// Obtener datos de la revista
 $revista = $revistasController->getRevistaById($idRevista);
 
-// Si no se encuentra la revista, redirigir
+// Si la revista no existe, redirigir
 if (!$revista) {
-    header('Location: revistas.php');
+    header("Location: revistas.php");
     exit();
 }
-
-// Procesar agregar al carrito
-$mensaje = '';
-$tipoMensaje = '';
-
-if (isset($_POST['agregar_carrito']) && isset($_POST['cantidad'])) {
-    $cantidad = intval($_POST['cantidad']);
-
-    // Validar cantidad
-    if ($cantidad < 1) {
-        $mensaje = 'La cantidad debe ser al menos 1';
-        $tipoMensaje = 'error';
-    } elseif ($cantidad > $revista['stock']) {
-        $mensaje = 'No hay suficiente stock disponible';
-        $tipoMensaje = 'error';
-    } else {
-        // Agregar al carrito
-        $resultado = $carritoController->addToCart('revista', $idRevista, $cantidad);
-
-        if ($resultado['success']) {
-            $mensaje = 'Revista añadida al carrito correctamente';
-            $tipoMensaje = 'success';
-        } else {
-            $mensaje = $resultado['message'];
-            $tipoMensaje = 'error';
-        }
-    }
-}
-
-// Obtener revistas relacionadas
-$revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista, $revista['editorial']);
 ?>
 
 <!DOCTYPE html>
@@ -65,8 +47,23 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
     <link rel="stylesheet" href="css/home.css">
     <link rel="stylesheet" href="css/producto.css">
     <link rel="stylesheet" href="css/notification.css">
-    <link rel="stylesheet" href="css/sticky-footer.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Estilos específicos para revistas */
+        .product-editorial {
+            margin-bottom: 15px;
+        }
+
+        .product-magazine-info {
+            margin-bottom: 20px;
+        }
+
+        .product-magazine-info strong {
+            font-weight: 600;
+            display: inline-block;
+            width: 140px;
+        }
+    </style>
 </head>
 
 <body>
@@ -84,38 +81,30 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
                 <li><a href="consolas.php">Consolas</a></li>
                 <li><a href="revistas.php" class="active">Revistas</a></li>
                 <li><a href="accesorios.php">Accesorios</a></li>
-                <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
+                <?php if ($esAdmin): ?>
                     <li><a href="admin/dashboard.php">Admin Panel</a></li>
                 <?php endif; ?>
             </ul>
         </nav>
         <div class="user-menu">
-            <?php if (isset($_SESSION['usuario'])): ?>
-                <div class="user-dropdown">
-                    <button class="user-btn">
-                        <i class="fas fa-user"></i>
-                        <?php echo htmlspecialchars($_SESSION['usuario']); ?>
-                        <i class="fas fa-caret-down"></i>
-                    </button>
-                    <div class="dropdown-content">
-                        <?php if (isset($_SESSION['admin']) && $_SESSION['admin'] == 1): ?>
-                            <a href="admin/dashboard.php"><i class="fas fa-user-shield"></i> Panel de Administración</a>
-                            <div class="dropdown-divider"></div>
-                        <?php endif; ?>
-                        <a href="pedidos.php"><i class="fas fa-box"></i> Mis Pedidos</a>
-                        <a href="carrito.php"><i class="fas fa-shopping-cart"></i> Carrito
-                            <?php if (isset($_SESSION['carrito']) && !empty($_SESSION['carrito'])): ?>
-                                <span class="cart-badge"><?php echo array_sum(array_column($_SESSION['carrito'], 'cantidad')); ?></span>
-                            <?php endif; ?>
-                        </a>
-                        <a href="ajustes.php"><i class="fas fa-cog"></i> Ajustes</a>
+            <div class="user-dropdown">
+                <button class="user-btn"><i class="fas fa-user"></i> <?php echo htmlspecialchars($nombreUsuario); ?> <i class="fas fa-caret-down"></i></button>
+                <div class="dropdown-content">
+                    <?php if ($esAdmin): ?>
+                        <a href="admin/dashboard.php"><i class="fas fa-user-shield"></i> Panel de Administración</a>
                         <div class="dropdown-divider"></div>
-                        <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
-                    </div>
+                    <?php endif; ?>
+                    <a href="pedidos.php"><i class="fas fa-box"></i> Mis Pedidos</a>
+                    <a href="carrito.php"><i class="fas fa-shopping-cart"></i> Carrito
+                        <?php if ($cantidadCarrito > 0): ?>
+                            <span class="cart-badge"><?php echo $cantidadCarrito; ?></span>
+                        <?php endif; ?>
+                    </a>
+                    <a href="ajustes.php"><i class="fas fa-cog"></i> Ajustes</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="logout.php"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
                 </div>
-            <?php else: ?>
-                <a href="login.php" class="login-btn"><i class="fas fa-sign-in-alt"></i> Iniciar Sesión</a>
-            <?php endif; ?>
+            </div>
         </div>
     </header>
 
@@ -128,33 +117,54 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
                 <span><?php echo htmlspecialchars($revista['titulo']); ?></span>
             </div>
 
-            <?php if ($mensaje) : ?>
-                <div id="notification" class="notification <?php echo $tipoMensaje; ?>">
-                    <span><?php echo $mensaje; ?></span>
-                    <button id="close-notification"><i class="fas fa-times"></i></button>
-                </div>
-            <?php endif; ?>
-
             <div class="product-detail">
                 <div class="product-media">
-                    <div class="product-main-image" style="background-image: url('<?php echo htmlspecialchars($revista['imagen']); ?>')"></div>
+                    <?php
+                    // Corregir rutas de imágenes para revistas
+                    $imagen = 'css/img/no-image.jpg';
+                    if (!empty($revista['imagen'])) {
+                        $nombreArchivo = basename($revista['imagen']);
+                        $imagen = "css/img/revistas/$nombreArchivo";
+
+                        // Verificar si existe la imagen
+                        if (!file_exists($imagen)) {
+                            // Intentar con la ruta completa si es absoluta
+                            if (file_exists($revista['imagen'])) {
+                                $imagen = $revista['imagen'];
+                            } else {
+                                $imagen = 'css/img/no-image.jpg';
+                            }
+                        }
+                    }
+                    ?>
+                    <div class="product-main-image" style="background-image: url('<?php echo $imagen; ?>')"></div>
                 </div>
 
                 <div class="product-info">
                     <h1 class="product-title"><?php echo htmlspecialchars($revista['titulo']); ?></h1>
 
                     <div class="product-meta">
-                        <span class="product-platform"><?php echo htmlspecialchars($revista['editorial']); ?></span>
-                        <span class="product-separator">|</span>
-                        <span class="product-year"><?php echo date('Y', strtotime($revista['fecha_publicacion'])); ?></span>
+                        <span class="product-editorial"><?php echo htmlspecialchars($revista['editorial']); ?></span>
+                        <?php if (!empty($revista['fecha_publicacion'])): ?>
+                            <span class="product-separator">|</span>
+                            <span class="product-year"><?php echo date('Y', strtotime($revista['fecha_publicacion'])); ?></span>
+                        <?php endif; ?>
                     </div>
 
-                    <div class="product-publisher">
-                        <strong>Editorial:</strong> <?php echo htmlspecialchars($revista['editorial']); ?>
-                    </div>
+                    <div class="product-magazine-info">
+                        <div><strong>Editorial:</strong> <?php echo htmlspecialchars($revista['editorial']); ?></div>
 
-                    <div class="product-developer">
-                        <strong>Fecha de publicación:</strong> <?php echo date('d/m/Y', strtotime($revista['fecha_publicacion'])); ?>
+                        <?php if (!empty($revista['fecha_publicacion'])): ?>
+                            <div><strong>Fecha de publicación:</strong> <?php echo date('d/m/Y', strtotime($revista['fecha_publicacion'])); ?></div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($revista['numero'])): ?>
+                            <div><strong>Número:</strong> <?php echo htmlspecialchars($revista['numero']); ?></div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($revista['paginas'])): ?>
+                            <div><strong>Páginas:</strong> <?php echo htmlspecialchars($revista['paginas']); ?></div>
+                        <?php endif; ?>
                     </div>
 
                     <div class="product-stock">
@@ -174,7 +184,7 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
                     </div>
 
                     <div class="product-actions">
-                        <?php if ($revista['stock'] > 0) : ?>
+                        <?php if ($revista['stock'] > 0): ?>
                             <div class="quantity-control">
                                 <button type="button" class="quantity-btn minus" id="decrease-quantity">-</button>
                                 <input type="number" value="1" min="1" max="<?php echo $revista['stock']; ?>" id="product-quantity" class="quantity-input">
@@ -186,7 +196,7 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
                                 data-nombre="<?php echo htmlspecialchars($revista['titulo']); ?>">
                                 <i class="fas fa-cart-plus"></i> Añadir al carrito
                             </button>
-                        <?php else : ?>
+                        <?php else: ?>
                             <button type="button" class="btn-out-of-stock" disabled>
                                 <i class="fas fa-times-circle"></i> Producto agotado
                             </button>
@@ -198,28 +208,9 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
             <div class="product-description">
                 <h2>Descripción</h2>
                 <div class="description-content">
-                    <p><?php echo nl2br(htmlspecialchars($revista['descripcion'])); ?></p>
+                    <p><?php echo nl2br(htmlspecialchars($revista['descripcion'] ?? 'Sin descripción disponible')); ?></p>
                 </div>
             </div>
-
-            <?php if (!empty($revistasRelacionadas)) : ?>
-                <div class="suggested-products">
-                    <h2>Revistas relacionadas</h2>
-                    <div class="products-grid">
-                        <?php foreach ($revistasRelacionadas as $relacionada) : ?>
-                            <div class="product-card">
-                                <div class="product-img" style="background-image: url('<?php echo htmlspecialchars($relacionada['imagen']); ?>');"></div>
-                                <div class="product-platform"><?php echo htmlspecialchars($relacionada['editorial']); ?></div>
-                                <h3><?php echo htmlspecialchars($relacionada['titulo']); ?></h3>
-                                <p class="price"><?php echo number_format($relacionada['precio'], 2); ?>€</p>
-                                <div class="product-actions">
-                                    <a href="revista_detalle.php?id=<?php echo $relacionada['ID_Revista']; ?>" class="btn-secondary">Ver Detalles</a>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-            <?php endif; ?>
         </div>
     </main>
 
@@ -243,22 +234,31 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
             <div class="footer-columns">
                 <div class="footer-column">
                     <h3>RetroGames Store</h3>
-                    <p>Tu tienda de videojuegos y consolas retro</p>
+                    <p>Tu tienda especializada en videojuegos, consolas y revistas retro.</p>
                 </div>
                 <div class="footer-column">
                     <h3>Enlaces rápidos</h3>
                     <ul>
-                        <li><a href="home.php">Inicio</a></li>
-                        <li><a href="videojuegos.php">Videojuegos</a></li>
-                        <li><a href="consolas.php">Consolas</a></li>
-                        <li><a href="revistas.php">Revistas</a></li>
+                        <li><a href="about.php">Sobre nosotros</a></li>
+                        <li><a href="contact.php">Contacto</a></li>
+                        <li><a href="faq.php">Preguntas frecuentes</a></li>
+                        <li><a href="envios.php">Política de envíos</a></li>
                     </ul>
                 </div>
                 <div class="footer-column">
                     <h3>Contacto</h3>
-                    <p>Calle Falsa 123</p>
-                    <p>info@retrogames.com</p>
-                    <p>+34 123 456 789</p>
+                    <p><i class="fas fa-map-marker-alt"></i> Calle Retro, 123, Ciudad</p>
+                    <p><i class="fas fa-phone"></i> +34 923 456 789</p>
+                    <p><i class="fas fa-envelope"></i> info@retrogamesstore.com</p>
+                </div>
+                <div class="footer-column">
+                    <h3>Síguenos</h3>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
                 </div>
             </div>
             <div class="copyright">
@@ -273,34 +273,17 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
             const userBtn = document.querySelector('.user-btn');
             const dropdownContent = document.querySelector('.dropdown-content');
 
-            if (userBtn && dropdownContent) {
-                userBtn.addEventListener('click', function() {
-                    dropdownContent.classList.toggle('show');
-                });
+            userBtn.addEventListener('click', function() {
+                dropdownContent.classList.toggle('show');
+            });
 
-                // Cerrar el menú si el usuario hace clic afuera
-                window.addEventListener('click', function(event) {
-                    if (!event.target.matches('.user-btn') && !event.target.parentNode.matches('.user-btn')) {
-                        if (dropdownContent.classList.contains('show')) {
-                            dropdownContent.classList.remove('show');
-                        }
+            window.addEventListener('click', function(event) {
+                if (!event.target.matches('.user-btn') && !event.target.parentNode.matches('.user-btn')) {
+                    if (dropdownContent.classList.contains('show')) {
+                        dropdownContent.classList.remove('show');
                     }
-                });
-            }
-
-            // Notificación
-            const notification = document.getElementById('notification');
-            if (notification) {
-                const closeBtn = document.getElementById('close-notification');
-                closeBtn.addEventListener('click', function() {
-                    notification.style.display = 'none';
-                });
-
-                // Auto-cerrar después de 5 segundos
-                setTimeout(function() {
-                    notification.style.display = 'none';
-                }, 5000);
-            }
+                }
+            });
 
             // Control de cantidad
             const quantityInput = document.getElementById('product-quantity');
@@ -308,29 +291,18 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
             const increaseBtn = document.getElementById('increase-quantity');
 
             if (quantityInput && decreaseBtn && increaseBtn) {
-                const maxStock = <?php echo $revista['stock']; ?>;
-
                 decreaseBtn.addEventListener('click', function() {
-                    let currentValue = parseInt(quantityInput.value);
-                    if (currentValue > 1) {
-                        quantityInput.value = currentValue - 1;
+                    let value = parseInt(quantityInput.value);
+                    if (value > 1) {
+                        quantityInput.value = value - 1;
                     }
                 });
 
                 increaseBtn.addEventListener('click', function() {
-                    let currentValue = parseInt(quantityInput.value);
-                    if (currentValue < maxStock) {
-                        quantityInput.value = currentValue + 1;
-                    }
-                });
-
-                // Validar input manual
-                quantityInput.addEventListener('change', function() {
-                    let currentValue = parseInt(this.value);
-                    if (isNaN(currentValue) || currentValue < 1) {
-                        this.value = 1;
-                    } else if (currentValue > maxStock) {
-                        this.value = maxStock;
+                    let value = parseInt(quantityInput.value);
+                    let max = parseInt(quantityInput.getAttribute('max'));
+                    if (value < max) {
+                        quantityInput.value = value + 1;
                     }
                 });
             }
@@ -344,6 +316,8 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
                     const tipo = this.getAttribute('data-tipo');
                     const nombre = this.getAttribute('data-nombre');
                     const cantidad = parseInt(document.getElementById('product-quantity').value);
+
+                    console.log(`Añadiendo al carrito: ${nombre} (${tipo} #${id}) - Cantidad: ${cantidad}`);
 
                     // Petición AJAX para añadir al carrito
                     fetch(`ajax_add_to_cart.php?action=add&tipo=${tipo}&id=${id}&cantidad=${cantidad}`)
@@ -364,7 +338,7 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
                                     updateCartCounter();
                                 }
                             } else {
-                                // Mostrar notificación de error
+                                // Mostrar notificación de error con el mensaje específico del servidor
                                 showToast(data.message || 'Error al añadir el producto al carrito', true);
                             }
                         })
@@ -376,7 +350,7 @@ $revistasRelacionadas = $revistasController->getRevistasRelacionadas($idRevista,
             }
         });
 
-        // Función para mostrar la notificación toast
+        // Función para mostrar notificación toast
         function showToast(message, isError = false) {
             const toast = document.getElementById('cart-toast');
             const toastMessage = document.getElementById('cart-toast-message');

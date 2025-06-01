@@ -186,16 +186,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <div class="form-group full-width">
-                            <label for="imagen">Imagen:</label>
+                            <label>Imagen actual:</label>
                             <div class="image-preview-container">
                                 <?php if ($revista['imagen']): ?>
                                     <div class="current-image">
-                                        <p>Imagen actual:</p>
                                         <img src="../../<?php echo htmlspecialchars($revista['imagen']); ?>" alt="Imagen actual" class="img-preview">
                                     </div>
+                                <?php else: ?>
+                                    <p>No hay imagen asociada a este producto</p>
                                 <?php endif; ?>
-                                <input type="file" id="imagen" name="imagen" accept="image/*">
-                                <p class="small">Subir una nueva imagen <?php echo $accion == 'Editar' ? '(Dejar en blanco para mantener la actual)' : ''; ?></p>
                             </div>
                         </div>
                     </div>
@@ -239,29 +238,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (dropdownContent.classList.contains('show')) {
                         dropdownContent.classList.remove('show');
                     }
-                }
-            });
-
-            // Preview de imagen
-            const imagenInput = document.getElementById('imagen');
-            const imagePreview = document.querySelector('.img-preview');
-
-            imagenInput.addEventListener('change', function() {
-                if (this.files && this.files[0]) {
-                    const reader = new FileReader();
-
-                    reader.onload = function(e) {
-                        if (imagePreview) {
-                            imagePreview.src = e.target.result;
-                        } else {
-                            const newPreview = document.createElement('img');
-                            newPreview.src = e.target.result;
-                            newPreview.classList.add('img-preview');
-                            document.querySelector('.image-preview-container').appendChild(newPreview);
-                        }
-                    }
-
-                    reader.readAsDataURL(this.files[0]);
                 }
             });
         });
